@@ -9,7 +9,7 @@ toolchain are the **same build on the same architecture, with no emulation in be
 ## Why a dedicated protocol
 
 The reference image `fentwums/oss-cad-suite` is published `linux/amd64` only (GHDL is not compiled in
-the upstream arm64 releases; see [Limitations](limitations.md)). On an Apple-Silicon (arm64) host the
+the upstream arm64 releases; see [Limitations](https://github.com/FEntwumS/FEntwumS.ContainerExtension/blob/main/docs/articles/limitations.md)). On an Apple-Silicon (arm64) host the
 container therefore runs under the daemon's binary-emulation layer (Rosetta/qemu), while any native
 toolchain is arm64. A macOS/arm64 "native vs container" comparison thus measures *containerisation +
 ISA emulation*, and the emulation term dominates — it does not isolate the cost of the integration
