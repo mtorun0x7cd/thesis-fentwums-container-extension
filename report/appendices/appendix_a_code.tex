@@ -1,0 +1,212 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Source Code Listings}
+\label{app:code}
+
+This appendix provides a high-level structural map and documents key low-level code implementations of the \textit{OneWare Container Extension}. The complete codebase is tracked in the repository \url{https://github.com/FEntwumS/FEntwumS.ContainerExtension} on the \texttt{main} branch.
+
+\section{High-Level Architectural Mapping}
+To aid in navigating the project source code, Table~\ref{tab:directory_map} maps the directory structure to the key architectural classes and their designated roles within the extension.
+
+\begin{table}[H]
+    \caption{Mapping of Directory Structure to Key Architectural Classes}
+    \label{tab:directory_map}
+    \centering
+    \begin{tabularx}{\textwidth}{@{} p{4.6cm} p{4.2cm} X @{}}
+    \toprule
+    \textbf{Directory/Path} & \textbf{Key Class} & \textbf{Architectural Role} \\
+    \midrule
+    \path{src/ContainerExtension/} & \texttt{DockerExecutionStrategy} & Core coordinator, dynamic platform resolution, and lifecycle manager. \\
+    \path{src/ContainerExtension/} & \texttt{ContainerTelemetry} & Thread-safe, low-allocation structured JSON telemetry logger. \\
+    \path{src/ContainerExtension/.../Docker/} & \texttt{DockerCommandBuilder} & Builds the shell-less argument vector, host-to-container path mappings, and volume/security configuration. \\
+    \path{src/ContainerExtension/Registry/} & \texttt{RegistryClient} & Handles OCI registry HTTP communication, authentication, and registry tag enumeration (SSRF-guarded). \\
+    \bottomrule
+    \end{tabularx}
+\end{table}
+
+\lstset{
+  style=csharp-appendix,
+  literate={—}{---}1 {⚠️}{[WARN]}1
+}
+
+\section{Windows Named Pipe Privilege Escalation Override}
+Listing~\ref{lst:secure_named_pipe_get_handler} illustrates how .NET Reflection is utilized in the C\# client to target the non-public \texttt{\_streamOpener} field of \texttt{ManagedHandler} and overwrite it with our custom stream opener.
+
+\begin{lstlisting}[language=CSharp, caption={[Reflection-based Handler Interception in SecureNamedPipeCredentials]{Reflection-based Handler Interception in SecureNamedPipeCredentials.GetHandler}}, label={lst:secure_named_pipe_get_handler}]
+public override System.Net.Http.HttpMessageHandler GetHandler(System.Net.Http.HttpMessageHandler innerHandler)
+{
+    if (string.Equals(innerHandler.GetType().FullName, "Microsoft.Net.Http.Client.ManagedHandler", StringComparison.Ordinal))
+    {
+        var field = innerHandler.GetType().GetField("_streamOpener", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (field != null)
+        {
+            var delegateType = field.FieldType;
+            var method = typeof(SecureNamedPipeCredentials).GetMethod(nameof(SecureStreamOpenerAsync), 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method != null)
+            {
+                var d = System.Delegate.CreateDelegate(delegateType, this, method);
+                field.SetValue(innerHandler, d);
+            }
+        }
+    }
+    return innerHandler;
+}
+\end{lstlisting}
+
+Listing~\ref{lst:secure_stream_opener_async} details the custom socket stream opener that establishes the named pipe client stream using identification-level impersonation to block local privilege escalation.
+
+\begin{lstlisting}[language=CSharp, caption={Custom SecureStreamOpenerAsync with Identification Impersonation}, label={lst:secure_stream_opener_async}]
+private async System.Threading.Tasks.Task<System.IO.Stream> SecureStreamOpenerAsync(string host, int port, System.Threading.CancellationToken token)
+{
+    var pipeName = _endpoint.LocalPath;
+    var serverName = ".";
+    if (pipeName.StartsWith(@"\\", StringComparison.Ordinal))
+    {
+        var parts = pipeName.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 3)
+        {
+            serverName = parts[0];
+            pipeName = parts[parts.Length - 1];
+        }
+    }
+    else
+    {
+        if (pipeName.StartsWith("pipe/", StringComparison.OrdinalIgnoreCase))
+            pipeName = pipeName[5..];
+        else if (pipeName.StartsWith("/pipe/", StringComparison.OrdinalIgnoreCase))
+            pipeName = pipeName[6..];
+    }
+
+    var pipe = new System.IO.Pipes.NamedPipeClientStream(
+        serverName,
+        pipeName,
+        System.IO.Pipes.PipeDirection.InOut,
+        System.IO.Pipes.PipeOptions.Asynchronous,
+        System.Security.Principal.TokenImpersonationLevel.Identification);
+
+    try
+    {
+        await pipe.ConnectAsync(token).ConfigureAwait(false);
+        return pipe;
+    }
+    catch
+    {
+        await pipe.DisposeAsync().ConfigureAwait(false);
+        throw;
+    }
+}
+\end{lstlisting}
+
+\section{Path Resolution Security Verification}
+Listing~\ref{lst:resolve_canonical_internal} displays the recursive segment-by-segment canonicalization logic used to resolve symbolic links and check path safety boundaries. The excerpt is condensed: the production detector branches on \texttt{Directory.Exists} and \texttt{File.Exists} to cover both file and directory reparse points, whereas the listing shows only the directory branch for brevity.
+
+\begin{lstlisting}[language=CSharp, caption={Recursive Symbolic Link Resolution (ResolveCanonicalInternal, condensed)}, label={lst:resolve_canonical_internal}]
+string ResolveCanonicalInternal(string currentPath, int depth)
+{
+    if (depth > 40)
+        throw new ContainerExtension.DockerExecutionException("Too many levels of symbolic links.");
+
+    string absolutePath = currentPath;
+    if (!Path.IsPathRooted(absolutePath))
+        absolutePath = Path.Combine(Directory.GetCurrentDirectory(), absolutePath);
+
+    string root = Path.GetPathRoot(absolutePath) ?? (OperatingSystem.IsWindows() ? "C:\\" : "/");
+    string remainder = absolutePath.Substring(root.Length);
+    var components = remainder.Split(new char[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+    string current = root;
+
+    foreach (var component in components)
+    {
+        if (string.Equals(component, ".", StringComparison.Ordinal)) continue;
+        if (string.Equals(component, "..", StringComparison.Ordinal))
+        {
+            var parent = Path.GetDirectoryName(current);
+            current = parent ?? root;
+            continue;
+        }
+
+        string next = Path.Combine(current, component);
+        bool isSymlink = false;
+        string? target = null;
+
+        try
+        {
+            var info = new DirectoryInfo(next);
+            if (info.Exists && info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                target = info.LinkTarget;
+                isSymlink = !string.IsNullOrEmpty(target);
+            }
+        }
+        catch { /* fallback check logic */ }
+
+        if (isSymlink && target != null)
+        {
+            string canonicalSymlink = Path.GetFullPath(next);
+            if (!seenSymlinks.Add(canonicalSymlink))
+                throw new ContainerExtension.DockerExecutionException($"Circular symbolic link detected: '{next}'");
+
+            try
+            {
+                current = Path.IsPathRooted(target) 
+                    ? ResolveCanonicalInternal(target, depth + 1)
+                    : ResolveCanonicalInternal(Path.Combine(current, target), depth + 1);
+            }
+            finally { seenSymlinks.Remove(canonicalSymlink); }
+        }
+        else
+        {
+            current = next;
+        }
+    }
+    return Path.GetFullPath(current);
+}
+\end{lstlisting}
+
+\section{Asynchronous Error Telemetry Channel Processing}
+Listing~\ref{lst:process_error_channel} demonstrates the asynchronous background processing loop using .NET \texttt{System.\allowbreak Threading.\allowbreak Channels} to serialize error logging actions asynchronously.
+
+\begin{lstlisting}[language=CSharp, caption={Asynchronous Channel Telemetry consumer loop}, label={lst:process_error_channel}]
+private static System.Threading.Channels.Channel<TelemetryErrorEntry> ErrorChannel =
+    System.Threading.Channels.Channel.CreateUnbounded<TelemetryErrorEntry>(new System.Threading.Channels.UnboundedChannelOptions
+    {
+        SingleReader = true,
+        SingleWriter = false
+    });
+
+static ContainerTelemetry()
+{
+    _ = Task.Run(ProcessErrorChannelAsync);
+}
+
+private static async Task ProcessErrorChannelAsync()
+{
+    var reader = ErrorChannel.Reader;
+    await foreach (var entry in reader.ReadAllAsync().ConfigureAwait(false))
+    {
+        WriteErrorEntryToDisk(entry);
+    }
+}
+\end{lstlisting}

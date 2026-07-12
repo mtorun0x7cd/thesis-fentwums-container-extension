@@ -1,0 +1,92 @@
+name: CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+      - production
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - production
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+
+# Least privilege by default; the release job opts into write below.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and Test LaTeX Documents
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/xu-cheng/texlive-full:20260401
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Lint LaTeX documents
+        run: |
+          chktex -q -v0 report/main.tex || true
+
+      - name: Install system dependencies
+        run: |
+          apk add --no-cache make git python3
+
+      - name: Compile LaTeX documents
+        run: |
+          make clean && make report
+
+      - name: Upload compiled PDFs as artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: compiled-deliverables
+          path: |
+            .tmp.nosync/pdf/main.pdf
+
+  release:
+    name: Publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/xu-cheng/texlive-full:20260401
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          apk add --no-cache make git python3
+
+      - name: Compile release deliverables
+        run: |
+          make clean && make report
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        with:
+          files: |
+            .tmp.nosync/pdf/main.pdf
+          # Static body only. Do NOT use generate_release_notes: re-pushing a tag
+          # duplicates the changelog.
+          body: |
+            Release ${{ github.ref_name }}. See the README for documentation.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

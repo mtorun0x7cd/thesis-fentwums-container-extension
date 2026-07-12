@@ -1,0 +1,119 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+% --- TH Köln CI Colors ---
+\definecolor{thred}{RGB}{204, 0, 0}
+\definecolor{thorange}{RGB}{209, 65, 36}
+\definecolor{thgray}{RGB}{75, 75, 75}
+\definecolor{thlightgray}{RGB}{200, 200, 200}
+
+% --- Logo Positioning & Graphics ---
+\setlength{\TPHorizModule}{1mm}
+\setlength{\TPVertModule}{1mm}
+
+% --- Headings (Modern Sans-Serif) ---
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\huge\bfseries\color{thred}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+  [\vspace{1ex}\color{thgray}\titlerule] % Line below chapter title
+
+\titleformat{\section}
+  {\normalfont\sffamily\Large\bfseries\color{thgray}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\sffamily\large\bfseries\color{thgray}}
+  {\thesubsection}{1em}{}
+
+% --- Paragraphs ---
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+
+% --- Header/Footer (FancyHdr) ---
+\setlength{\headheight}{24.7pt} % Fix warning
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\fancyhead[L]{\sffamily\nouppercase{\leftmark}}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{thred}\leaders\hrule height \headrulewidth\hfill}}
+
+% --- Themed Hyperlinks ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=thred,      % Internal links (TOC, figs) -> TH Red
+    filecolor=thgray,
+    urlcolor=thorange,    % URLs -> TH Orange
+    citecolor=thorange,   % Citations -> TH Orange
+    pdftitle={\ThesisTitle},
+    pdfauthor={\ThesisAuthor},
+    pdfsubject={Master Thesis},
+    pdfkeywords={FPGA, Docker, Containers, EDA, Toolchains}
+}
+
+% --- Diagram House Style -----------------------------------------------------
+% One shared vocabulary for every TikZ figure, so the diagrams are visually
+% consistent. Text is set at a fixed document size in the sans face (TeX Gyre
+% Heros) and is NEVER scaled with \resizebox, so diagram type matches the body
+% and stays sharp. Colours reuse the TH palette defined above.
+\tikzset{
+    % Default arrow tip for every diagram.
+    >={Stealth[length=2.2mm,width=1.7mm]},
+    %--- Generic blocks ------------------------------------------------------
+    fwbox/.style      = {draw=thgray, fill=thgray!6, rounded corners=2pt, align=center,
+                         inner sep=4pt, minimum height=8mm, minimum width=28mm,
+                         font=\footnotesize\sffamily, line width=0.6pt},
+    fwstart/.style    = {fwbox, draw=thred, fill=thred!10, font=\footnotesize\sffamily\bfseries},
+    fwaccent/.style   = {fwbox, draw=thred, fill=thred!8},
+    fwalt/.style      = {fwbox, draw=thorange, fill=thorange!10},
+    fwdecision/.style = {draw=thorange, fill=thorange!12, diamond, aspect=2.3, align=center,
+                         inner sep=1pt, minimum height=8mm, font=\footnotesize\sffamily, line width=0.6pt},
+    fwstate/.style    = {fwbox, minimum width=24mm},
+    fwsystem/.style   = {draw=thgray, densely dashed, rounded corners=3pt, fill=thgray!3, inner sep=6pt},
+    fwbranch/.style   = {draw=thgray, densely dashed, fill=thgray!4, rounded corners=2pt, align=left,
+                         inner sep=4pt, text width=44mm, font=\scriptsize\sffamily, line width=0.6pt},
+    %--- UML class (title compartment + member compartment) ------------------
+    fwclass/.style    = {draw=thgray, fill=thgray!5, rounded corners=2pt, rectangle split,
+                         rectangle split parts=2, align=left, inner sep=4pt, text width=50mm,
+                         font=\footnotesize\sffamily, line width=0.6pt},
+    fwinterface/.style= {fwclass, draw=thred, fill=thred!8},
+    %--- Byte-layout cells ---------------------------------------------------
+    fwcell/.style     = {draw=thgray, fill=thgray!6, minimum height=11mm, minimum width=15mm,
+                         align=center, font=\scriptsize\sffamily, line width=0.6pt},
+    fwcellhl/.style   = {fwcell, draw=thred, fill=thred!10},
+    fwcellalt/.style  = {fwcell, draw=thorange, fill=thorange!10},
+    %--- Sequence-diagram vocabulary ----------------------------------------
+    fwactor/.style    = {draw=thgray, fill=thgray!8, rounded corners=2pt, align=center,
+                         minimum height=7mm, minimum width=22mm, font=\scriptsize\sffamily\bfseries},
+    fwlifeline/.style = {draw=thgray, densely dashed, line width=0.5pt},
+    fwactivation/.style = {draw=thgray, fill=thgray!15, minimum width=2.2mm},
+    %--- Edges ---------------------------------------------------------------
+    fwedge/.style     = {->, draw=thgray, line width=0.6pt},
+    fwedgehl/.style   = {fwedge, draw=thred},
+    fwedgealt/.style  = {fwedge, draw=thorange},
+    fwdep/.style      = {->, draw=thorange, densely dashed, line width=0.6pt},
+    fwrealize/.style  = {-{Triangle[open, length=2.8mm, width=2.8mm]}, draw=thgray, densely dashed, line width=0.6pt},
+    fwmsg/.style      = {-{Stealth[length=2mm]}, draw=thgray, line width=0.5pt, font=\scriptsize\sffamily},
+    fwreturn/.style   = {-{Stealth[length=2mm]}, draw=thgray, densely dashed, line width=0.5pt, font=\scriptsize\sffamily},
+    %--- Edge label chip (white backing so labels never collide with lines) --
+    fwlabel/.style    = {font=\scriptsize\sffamily, fill=white, inner sep=1.5pt},
+}

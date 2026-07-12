@@ -1,0 +1,20 @@
+[submodule "FEntwumS.ContainerExtension"]
+	path = FEntwumS.ContainerExtension
+	url = https://github.com/FEntwumS/FEntwumS.ContainerExtension.git
+	shallow = true
+	ignore = dirty
+[submodule "FEntwumS.NetlistViewer"]
+	path = FEntwumS.NetlistViewer
+	url = https://github.com/FEntwumS/FEntwumS.NetlistViewer.git
+	shallow = true
+	ignore = dirty
+[submodule "OneWare.GhdlExtension"]
+	path = OneWare.GhdlExtension
+	url = https://github.com/FEntwumS/OneWare.GhdlExtension.git
+	shallow = true
+	ignore = dirty
+[submodule "OneWare"]
+	path = OneWare
+	url = https://github.com/FEntwumS/OneWare.git
+	shallow = true
+	ignore = dirty

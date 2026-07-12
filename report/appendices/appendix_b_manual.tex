@@ -1,0 +1,152 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Cross-Platform Environment Manual}
+\label{app:manual}
+
+This appendix provides a step-by-step setup and configuration guide for running the \textit{OneWare Container Extension} across different platforms and container runtimes.
+
+\section{Installation}
+To install the Container Extension within OneWare Studio, execute the following steps:
+\begin{enumerate}
+    \item Launch OneWare Studio.
+    \item Navigate to the \textbf{Extension Manager} panel.
+    \item Search for the ``Container Extension'' in the marketplace and click \textbf{Install} to download and install it directly.
+    \item Restart the IDE to load the background daemon services and registration hooks.
+\end{enumerate}
+
+\section{Global Configuration Settings}
+The Container Extension allows users to customize container parameters and security bounds. Table~\ref{tab:config_keys} outlines all the settings registered in the OneWare configuration database by \texttt{ContainerExtensionModule.cs}.
+
+\begin{table}[htbp]
+    \caption{Configuration settings keys defined in \texttt{ContainerExtensionModule.cs}}
+    \label{tab:config_keys}
+    \centering
+    \scriptsize
+    \begin{tabularx}{\textwidth}{@{} p{4.5cm} p{2.5cm} X @{}}
+        \toprule
+        \textbf{Setting Key} & \textbf{Default} & \textbf{Description} \\ \midrule
+        \path{ContainerExtension_DockerRuntimePath} & \texttt{""} & Absolute path to the runtime executable (defaults to host \texttt{PATH}). \\
+        \path{ContainerExtension_DefaultImage} & \path{"fentwums/oss-cad-suite:latest"} & The default full-flow oss-cad-suite image for all tools; build-only (not on Docker Hub), produced via Build Local Image rather than pulled. \\
+        \path{ContainerExtension_MemoryLimit} & \texttt{0.0} & RAM limit in MB (0 = unlimited). \\
+        \path{ContainerExtension_CpuLimit} & \texttt{0.0} & CPU cores limit (0 = unlimited). \\
+        \path{ContainerExtension_Timeout} & \texttt{0.0} & Maximum container execution runtime in minutes (0 = no limit). \\
+        \path{ContainerExtension_NetworkMode} & \texttt{"bridge"} & Network driver mode (\texttt{bridge}, \texttt{host}, or \texttt{none}). \\
+        \path{ContainerExtension_PullPolicy} & \texttt{"if-\allowbreak not-\allowbreak present"} & Image pull policy (\texttt{always}, \texttt{if-not-present}, or \texttt{never}). \\
+        \path{ContainerExtension_AutoRemove} & \texttt{true} & Automatically remove container after execution (\texttt{--rm}). \\
+        \path{ContainerExtension_AllowPrivileged} & \texttt{false} & Allow privileged container execution. \\
+        \path{ContainerExtension_LogLevel} & \texttt{"Errors Only"} & Telemetry verbosity (\texttt{Off}, \texttt{Errors Only}, \texttt{Info}, \texttt{Verbose}). \\
+        \path{ContainerExtension_ShowTimestamps} & \texttt{true} & Prepend timestamp to stdout/stderr stream. \\
+        \path{ContainerExtension_ContainerNamePrefix} & \texttt{"container\-extension-"} & Prefix for spawned container names. \\
+        \path{ContainerExtension_ExtraFlags} & \texttt{""} & Custom runtime flags or labels to append. \\
+        \path{ContainerExtension_DashboardRefresh} & \texttt{"Manual"} & Dashboard statistics polling interval. \\
+        \path{ContainerExtension_TelemetryRetention} & \texttt{"25"} & Number of recent executions retained in telemetry cache. \\
+        \path{ContainerExtension_DaemonSocket} & \texttt{""} & Custom socket endpoint override (e.g., \texttt{unix://...} or \texttt{npipe://...}). \\
+        \path{ContainerExtension_BypassNamedPipeCheck} & \texttt{true} & Bypass the Windows named-pipe server-trust validation. Default-on: the Windows-only check yields false positives on WSL2 relays and rootless/remote engines; uncheck it on a hardened Windows host to re-enable the guard. \\
+        \path{ContainerExtension_AllowNativeFallback} & \texttt{false} & Fall back to native host execution if container daemon is offline. \\
+        \path{ContainerExtension_Platform} & \texttt{"auto"} & Overrides container architecture target (e.g., \texttt{linux/amd64}). \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\newpage
+\section{Runtime-Specific Configuration Manuals}
+
+\subsection{OrbStack (macOS)}
+OrbStack is a highly optimized, lightweight Docker Desktop alternative for macOS. It integrates natively with the macOS Hypervisor framework, offering superior I/O performance via VirtioFS.
+
+\begin{enumerate}
+    \item \textbf{Socket Mapping:} OrbStack establishes a standard Unix domain socket at \path{/var/run/docker.sock}, which is automatically symlinked. If OneWare cannot locate the socket, set the configuration key:
+    \begin{lstlisting}[language=bash]
+ContainerExtension_DaemonSocket = unix:///var/run/docker.sock
+\end{lstlisting}
+    \item \textbf{Architecture Emulation (Apple Silicon):}
+    When running on Apple Silicon (M-Series chip), running AMD64 images incurs a translation tax via Rosetta 2. For maximum performance, configure the platform override to native ARM64:
+    \begin{lstlisting}[language=bash]
+ContainerExtension_Platform = linux/arm64
+\end{lstlisting}
+    Alternatively, keep it on \texttt{auto} to allow the extension to query the daemon and determine availability.
+    \item \textbf{Resource Optimization:} Ensure OrbStack's shared memory limit matches or exceeds the workspace requirements. If a synthesis run fails due to insufficient memory, set:
+    \begin{lstlisting}[language=bash]
+ContainerExtension_MemoryLimit = 8192 # Limits container to 8 GB
+\end{lstlisting}
+\end{enumerate}
+
+\subsection{Docker Desktop (Windows and macOS)}
+Docker Desktop is the official cross-platform container management system.
+
+\begin{enumerate}
+    \item \textbf{Named Pipe Impersonation (Windows):}
+    On Windows hosts, Docker Desktop communicates via named pipes, typically at \texttt{npipe://./pipe/docker\_engine}. The client always opens the pipe at \path{TokenImpersonationLevel.Identification}, so the daemon endpoint can authenticate the caller but cannot impersonate its token. On top of this, an optional server-trust check verifies the pipe server process before the connection is used.
+    \item \textbf{Bypassing the Server-Trust Check:}
+    That server-trust check is Windows-only and produces false positives on common configurations (WSL2 relays, rootless or remote engines), so it is \emph{bypassed by default} (\path{ContainerExtension_BypassNamedPipeCheck = true}). On a hardened Windows host where the daemon is local and trusted, uncheck ``Bypass Named Pipe Security Check'' to re-enable it:
+    \begin{lstlisting}[language=bash]
+ContainerExtension_BypassNamedPipeCheck = false
+\end{lstlisting}
+    \item \textbf{WSL 2 Integration:}
+    For Windows hosts, ensure WSL 2 is enabled in the Docker Desktop settings and that the target Linux distribution is ticked under \textbf{Resources -> WSL Integration} to ensure correct absolute directory path mappings.
+\end{enumerate}
+
+\subsection{Podman (Rootless Linux Setup)}
+Podman is a daemonless, rootless container engine that operates natively on Linux.
+
+\begin{enumerate}
+    \item \textbf{Rootless Socket Setup:}
+    To run Podman without root privileges, enable the user-level systemd service:
+    \begin{lstlisting}[language=bash]
+systemctl --user enable --now podman.socket
+\end{lstlisting}
+    This exposes a local user socket at \texttt{/run/user/\$UID/podman/podman.sock}.
+    \item \textbf{Daemon Connection Config:}
+    Configure the OneWare settings to point to the user-space socket:
+    \begin{lstlisting}[language=bash]
+ContainerExtension_DaemonSocket = unix:///run/user/1000/podman/podman.sock
+ContainerExtension_DockerRuntimePath = /usr/bin/podman
+\end{lstlisting}
+    Replace \texttt{1000} with the target host user ID.
+    \item \textbf{User Namespace Mapping:}
+    Rootless execution requires correct UID mapping. Verify that \texttt{/etc/subuid} and \texttt{/etc/subgid} have ranges defined for the execution user:
+    \begin{lstlisting}[language=bash]
+user:100000:65536
+\end{lstlisting}
+    This mapping translates host user ID \texttt{1000} inside the container boundary seamlessly, resolving host-to-container write permission issues on bound output directories.
+\end{enumerate}
+
+\section{Troubleshooting Guide}
+
+\subsection{Socket Permissions (Linux)}
+If compilation fails with socket permission errors, ensure the current user belongs to the \texttt{docker} group:
+\begin{lstlisting}[language=bash]
+sudo usermod -aG docker $USER
+newgrp docker
+\end{lstlisting}
+If the group configuration is restricted by system administrators, apply temporary read-write permissions to the socket file:
+\begin{lstlisting}[language=bash]
+sudo chmod 666 /var/run/docker.sock
+\end{lstlisting}
+
+\subsection{Dangling Container Reap}
+On start, the Container Extension scans for and reaps any orphaned containers matching the user-configured name prefix. If dangling containers are leaking memory or host resources, verify the prefix:
+\begin{lstlisting}[language=bash]
+ContainerExtension_ContainerNamePrefix = containerextension-
+\end{lstlisting}
+Spawned containers are automatically reaped after run completion unless the configuration key \path{ContainerExtension_AutoRemove} is set to \texttt{false}.

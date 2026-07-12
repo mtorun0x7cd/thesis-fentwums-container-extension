@@ -1,0 +1,305 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Concept and Architecture}
+\label{ch:concept}
+
+This chapter details the conceptual model and architectural design of the OneWare Container Extension. The system is designed to provide transparent containerization of heterogeneous EDA toolchains while maintaining local execution fallbacks, high-performance structured diagnostics, and strict security boundaries.
+
+\section{The Hybrid Strategy Pattern}
+To address the challenge of runtime execution flexibility (RQ1), the extension implements a modified version of the Gang-of-Four Strategy Pattern \cite{gamma1994design}, termed the \textit{Hybrid Strategy Pattern}. 
+
+In standard IDE plugin architectures, a tool execution strategy is statically bound to a specific tool. Under the Hybrid Strategy Pattern, the execution layer dynamically selects the optimal execution provider at runtime based on environmental conditions and user-configured preferences. Figure~\ref{fig:strategy_pattern} shows the resulting structure, in which a single dispatcher realizes the strategy interface and internally routes each invocation to either the container path or a native-fallback path.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=13mm and 30mm]
+        % The interface is realized by exactly one concrete strategy class.
+        \node (iface) [fwinterface, text width=58mm] {
+            \textit{«\,interface\,»}\\ \textbf{IToolExecutionStrategy}
+            \nodepart{second}
+            {\ttfamily\scriptsize
+            + GetStrategyName() : string\\
+            + GetStrategyKey() : string\\
+            + ExecuteAsync(command) : Task\\
+            + StartWeakProcess(command)}
+        };
+        \node (cls) [fwclass, text width=58mm, below=of iface] {
+            \textbf{DockerExecutionStrategy}\\
+            {\scriptsize\itshape sealed : IToolExecutionStrategy, IDisposable}
+            \nodepart{second}
+            {\ttfamily\scriptsize
+            -- \_settingsService : ISettingsService\\
+            -- \_client : DockerClient?\\
+            -- \_connectionProvider, \_imageManager,\\
+            \phantom{-- }\_containerManager}
+        };
+        % In-class native fallback: a private code path, NOT a second realization.
+        \node (native) [fwbranch, text width=42mm, right=of cls] {
+            \textbf{Native-fallback path}\\
+            {\itshape in-class branch, not a separate class}\\[2pt]
+            {\ttfamily ExecuteNativelyAsync(\dots)}\\
+            {\ttfamily FindExecutableInPath(\dots)}
+        };
+        \draw [fwrealize] (cls) -- (iface);
+        \draw [fwdep] (cls.east) -- node[fwlabel] {Fallback} (native.west);
+    \end{tikzpicture}
+    \caption[Strategy Pattern for Tool Execution]{Tool-execution strategy structure. \texttt{IToolExecutionStrategy} is realized by the single dispatcher \texttt{DockerExecutionStrategy}, which routes each invocation either to the container path or to an in-class native-fallback path (the dependency edge) when the container runtime is unavailable and fallback is enabled.}
+    \label{fig:strategy_pattern}
+\end{figure}
+
+The \texttt{DockerExecutionStrategy} implements the \texttt{IToolExecutionStrategy} interface and is registered as a selectable execution strategy for each tool. Container routing is opt-in per tool through settings; when a tool is opted in, OneWare dispatches that tool's invocations to this strategy, while native execution remains the default. The decision matrix for execution routing within the strategy is formulated mathematically below.
+
+Let $S_{\text{dock}} \in \{0, 1\}$ represent the connectivity status of the Docker daemon socket, where $1$ denotes a responsive, writable socket and $0$ represents an unreachable or offline daemon. Let $C_{\text{fallback}} \in \{0, 1\}$ represent the user configuration preference for allowing native host execution fallback (\texttt{ContainerExtension\_AllowNativeFallback}). Let $P_{\text{native}} \in \{0, 1\}$ denote the presence of the required tool binary within the host system's executable path environment variable (\texttt{PATH}).
+
+The chosen execution strategy $E$ is determined by the routing mapping function $f$, defined as:
+\begin{equation}
+E = f(S_{\text{dock}}, C_{\text{fallback}}, P_{\text{native}}) = \begin{cases} 
+E_{\text{docker}} & \text{if } S_{\text{dock}} = 1 \\
+E_{\text{native}} & \text{if } S_{\text{dock}} = 0 \land C_{\text{fallback}} = 1 \land P_{\text{native}} = 1 \\
+\text{Err}_{\text{offline}} & \text{if } S_{\text{dock}} = 0 \land C_{\text{fallback}} = 0 \\
+\text{Err}_{\text{missing}} & \text{if } S_{\text{dock}} = 0 \land C_{\text{fallback}} = 1 \land P_{\text{native}} = 0 
+\end{cases}
+\end{equation}
+where $E_{\text{docker}}$ represents the container execution strategy, $E_{\text{native}}$ denotes the native host execution fallback, and $\text{Err}_{\text{offline}}$ and $\text{Err}_{\text{missing}}$ represent the respective error states.
+
+By implementing this decision matrix, the strategy avoids silent build failures. If the container engine is offline, it either fails fast with a descriptive configuration diagnostic or transparently falls back to local execution.
+
+\section[Cross-Platform Transport and Namespace Mapping (RQ1)]{Cross-Platform Transport and\\ Namespace Mapping (RQ1)}
+Ensuring seamless operation across Windows, macOS, and Linux requires resolving operating-system-level differences in transport protocols and file system namespaces.
+
+\subsection{Dynamic Transport Resolution}
+The Docker Engine API communicates over different local IPC mechanisms depending on the host operating system. The concept introduces a transport resolution sequence, summarized in Figure~\ref{fig:transport_resolution}:
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=11mm and 9mm]
+        \node (start)     [fwstart] {Resolve daemon URI};
+        \node (dcustom)   [fwdecision, below=of start, text width=24mm]
+                          {Custom socket or \texttt{DOCKER\_HOST}?};
+        \node (cfguri)    [fwbox, right=10mm of dcustom, text width=40mm]
+                          {Use the configured URI\\(\texttt{unix}/\texttt{npipe}/\texttt{tcp}/\texttt{http(s)}/\texttt{ssh})};
+        \node (dos)       [fwdecision, below=14mm of dcustom] {Host OS?};
+        % Windows branch (left)
+        \node (winpipe)   [fwbox, below left=14mm and 20mm of dos, text width=34mm]
+                          {Default named pipe\\ \texttt{\textbackslash\textbackslash.\textbackslash pipe\textbackslash docker\_engine}};
+        \node (wintrust)  [fwbox, below=of winpipe, text width=34mm]
+                          {Verify pipe-server trust\\(open at \texttt{Identification} level)};
+        \node (dtrust)    [fwdecision, below=of wintrust, text width=22mm] {Trusted or bypass?};
+        \node (abort)     [fwaccent, below=of dtrust, text width=37mm] {Abort:\\ \texttt{DockerExecutionException}};
+        % Unix branch (right)
+        \node (unixprobe) [fwbox, below right=14mm and 20mm of dos, text width=36mm]
+                          {Probe socket candidates\\ in ownership-checked order};
+        \node (unixlist)  [fwbox, below=of unixprobe, text width=42mm]
+                          {\texttt{/var/run/docker.sock}, then rootless: podman \texttt{/run/user/[UID]/podman/}\\\texttt{podman.sock}, colima, orbstack};
+        \node (establish) [fwstart] at ($(dtrust -| dos)+(6mm,0)$) {Establish API connection};
+        % Edges
+        \draw [fwedge] (start) -- (dcustom);
+        \draw [fwedge] (dcustom) -- node[fwlabel] {yes} (cfguri);
+        \draw [fwedge] (dcustom) -- node[fwlabel] {no} (dos);
+        \draw [fwedge] (dos.west) -| node[fwlabel, near start] {Windows} (winpipe.north);
+        \draw [fwedge] (dos.east) -| node[fwlabel, near start] {Unix} (unixprobe.north);
+        \draw [fwedge] (winpipe) -- (wintrust);
+        \draw [fwedge] (wintrust) -- (dtrust);
+        \draw [fwedge] (dtrust) -- node[fwlabel] {no} (abort);
+        \draw [fwedge] (unixprobe) -- (unixlist);
+        \draw [fwedge] (dtrust) -- node[fwlabel, fill=none, above=1pt] {trusted} (establish);
+        \draw [fwedge] (unixlist.south) |- (establish.east);
+        \draw [fwedge] (cfguri.east) -- ++(4mm,0) |- node[fwlabel, pos=0.28] {configured} (establish.east);
+    \end{tikzpicture}
+    \caption{Dynamic Transport Protocol Resolution Flowchart}
+    \label{fig:transport_resolution}
+\end{figure}
+
+The connection layer automatically checks:
+\begin{itemize}
+    \item \textbf{Windows Hosts:} Named Pipe transport (\texttt{\textbackslash\textbackslash.\textbackslash pipe\textbackslash docker\_engine}) which must be restricted to \texttt{Token\-Impersonation\-Level.}\allowbreak\texttt{Identification} to block privilege escalation.
+    \item \textbf{Unix Hosts (macOS/Linux):} Standard Unix Domain Socket (\path{/var/run/docker.sock}) or rootless alternatives like Podman sockets (typically located at \path{/run/user/[UID]/podman/podman.sock}).
+\end{itemize}
+
+\subsection{Rootless File Permissions and User-ID Injection}
+A major architectural issue with containerized execution is file ownership. On Linux hosts, the standard Docker daemon runs as the root user. Consequently, files compiled inside the container (such as synthesis netlists or log outputs) are written back to the host filesystem with root ownership, blocking the local developer from modifying or deleting them without administrative privileges.
+
+To guarantee zero-privilege execution and correct file ownership, the architecture implements dynamic host User ID (UID) and Group ID (GID) injection for rootful container runs \cite{sultan2019containers}.
+Operating-system-level virtualization relies on user namespaces to isolate user and group ID mappings \cite{kerrisk2013namespaces}. A user namespace is instantiated by calling the \texttt{clone} system call with the \texttt{CLONE\_NEWUSER} flag. Upon creation, the process inside the new user namespace is granted a full set of capabilities (such as \texttt{CAP\_SYS\_ADMIN}, \texttt{CAP\_NET\_ADMIN}, and \texttt{CAP\_SYS\_CHROOT}) but only within its namespace boundary. To map these namespace-internal user accounts back to host accounts, the parent process configures the map files at \texttt{/proc/[PID]/uid\_map} and \texttt{/proc/[PID]/gid\_map}.
+
+However, writing to these map files from an unprivileged process is restricted. To allow unprivileged users to map multiple host UIDs, the system utilizes SetUID helper binaries: \texttt{newuidmap} and \texttt{newgidmap}. These utilities query the configuration files \texttt{/etc/subuid} and \texttt{/etc/subgid}.
+A typical entry in \texttt{/etc/subuid} is formatted as:
+\begin{verbatim}
+developer:100000:65536
+\end{verbatim}
+This specifies that the user \texttt{developer} is allocated a block of 65536 subordinate UIDs starting at host UID 100000.
+We can formalize this UID mapping mathematically. Let $\mathrm{UID}_{\text{container}} \in [0, N]$ represent the user ID of a process running inside the container. Let $\mathrm{UID}_{\text{host\_user}}$ represent the primary UID of the unprivileged host developer executing the container. Let $\mathrm{UID}_{\text{sub\_start}}$ be the subordinate base UID allocated to the user (e.g., 100000). The mapped host UID $\mathrm{UID}_{\text{host\_mapped}}$ is defined by the translation function $g: \mathrm{UID}_{\text{container}} \to \mathrm{UID}_{\text{host\_mapped}}$:
+
+\begin{equation}
+\mathrm{UID}_{\text{host\_mapped}} = \begin{cases}
+\mathrm{UID}_{\text{host\_user}} & \text{if } \mathrm{UID}_{\text{container}} = 0 \\
+\mathrm{UID}_{\text{sub\_start}} + \mathrm{UID}_{\text{container}} - 1 & \text{if } 0 < \mathrm{UID}_{\text{container}} \le 65535
+\end{cases}
+\end{equation}
+
+By establishing this mapping, any files created by the container process running as root (UID 0) are mapped back to the host filesystem with the developer's host UID ($\mathrm{UID}_{\text{host\_user}}$), allowing native access. Any files created by other container users (like daemon accounts with UID 1000) are mapped to unprivileged subordinate host UIDs ($\mathrm{UID}_{\text{sub\_start}} + 999$), preventing privilege escalation on the host system. In this work the extension does not allocate or compute these subordinate ranges itself: on rootful runtimes it injects the host UID:GID directly through the container \texttt{User} field, and on rootless runtimes it omits \texttt{--user} and relies on the runtime's own user-namespace remap. The mapping above therefore describes the underlying runtime mechanism rather than logic implemented by the extension.
+
+When a rootless container is run, the user namespaces map UID 0 (root inside the container) to the unprivileged UID of the user on the host. For standard root-based Docker daemons, this is solved by reading the host developer's UID and GID and injecting them into the container creation payload (\texttt{User: "UID:GID"}). The host mapping rules rely on:
+\begin{itemize}
+    \item \textbf{Subuid/Subgid Mapping:} The files \texttt{/etc/subuid} and \texttt{/etc/subgid} define ranges of subordinate UIDs/GIDs allocated to users, allowing the rootless runtime to map container-internal users to unprivileged host-side ranges.
+    \item \textbf{Bind Mount Mapping:} Dynamic UID/GID injection ensures that files written to mounted host workspaces are mapped back with matching owner permissions, eliminating permission conflicts.
+\end{itemize}
+
+\section{State Machine for Container Lifecycle (Lazy Loading)}
+To optimize execution latency and resource utilization, the container lifecycle is managed by an event-driven ``Lazy Loading'' state machine. Rather than pre-allocating containers at IDE startup, containers are managed on demand. Figure~\ref{fig:lifecycle_state_machine} depicts the resulting eight-stage state machine.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[node distance=9mm and 9mm]
+        \node (s1) [fwstart] {\textbf{1.}\\Uninitialized};
+        \node (s2) [fwstate, right=of s1] {\textbf{2.}\\Probing Daemon};
+        \node (s3) [fwstate, right=of s2] {\textbf{3.}\\Volume Mount\\Verification};
+        \node (s4) [fwstate, right=of s3] {\textbf{4.}\\Local Image\\Check};
+        \node (s5) [fwstate, below=16mm of s4] {\textbf{5.}\\Image Pull\\(if missing)};
+        \node (s6) [fwstate, left=of s5] {\textbf{6.}\\Container\\Provisioning};
+        \node (s7) [fwstate, left=of s6] {\textbf{7.}\\I/O Stream\\Attachment};
+        \node (s8) [fwstate, left=of s7] {\textbf{8.}\\Ephemeral\\Cleanup};
+        \draw [fwedgehl] (s1) -- node[fwlabel] {Trigger} (s2);
+        \draw [fwedgehl] (s2) -- node[fwlabel] {Active} (s3);
+        \draw [fwedgehl] (s3) -- node[fwlabel] {Resolved} (s4);
+        \draw [fwedgealt] (s4) -- node[fwlabel] {Cache miss} (s5);
+        \draw [fwedgealt] (s5) -- node[fwlabel] {Pulled} (s6);
+        \draw [fwedgehl] (s4.south west) -- ++(0,-7mm) -| node[fwlabel, pos=0.4] {Cache hit} ([xshift=4mm]s6.north);
+        \draw [fwedgehl] (s6) -- (s7);
+        \draw [fwedgehl] (s7) -- node[fwlabel] {Process exit} (s8);
+        \draw [fwedgehl] (s8) -- node[fwlabel] {Reap} (s1);
+    \end{tikzpicture}
+    \caption{State Machine of the 8-stage Lazy-Loading Container Lifecycle}
+    \label{fig:lifecycle_state_machine}
+\end{figure}
+
+The 8 states of the lifecycle are defined as follows:
+\begin{enumerate}
+    \item \textbf{Uninitialized:} The tool strategy is idle. No network, RAM, or CPU resources are consumed.
+    \item \textbf{Probing Daemon:} Upon execution trigger, the Docker socket is validated to confirm daemon availability.
+    \item \textbf{Volume Mount Verification:} The host workspace path is resolved, canonicalized, and checked for access permissions.
+    \item \textbf{Local Image Check:} The local image cache is queried for the specific toolchain image via a daemon image inspect; no registry is contacted on this path.
+    \item \textbf{Image Pull (if missing):} If the required image variant is not cached locally, a pull command is dispatched to download the image from the registry.
+    \item \textbf{Container Provisioning:} The container is created via the API with resource limits (cgroups) and path mapping applied.
+    \item \textbf{I/O Stream Attachment:} Standard output and error streams are multiplexed and parsed in real time.
+    \item \textbf{Ephemeral Cleanup:} Upon process termination, the container is destroyed immediately (\texttt{AutoRemove: true}) to free system resources.
+\end{enumerate}
+
+\subsection{Operational Execution Flow with Fallback Pathways}
+To complement the abstract state transitions defined by the lazy-loading state machine, Figure~\ref{fig:lifecycle_flowchart} illustrates the low-level procedural flow executed by the middleware during tool invocation. This execution model accounts for daemon availability, cache validation, path authorization, stream attachment, and termination monitoring.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[node distance=7mm and 12mm]
+        \node (start)   [fwstart] {Start execution};
+        \node (probe)   [fwbox, below=of start, text width=44mm] {Probe / verify daemon\\(socket live+writable, or pipe trust)};
+        \node (ddaemon) [fwdecision, below=of probe] {Daemon reachable?};
+        % Offline branch (left, gated)
+        \node (dfall)   [fwdecision, left=16mm of ddaemon, text width=24mm] {Fallback on \& tool on PATH?};
+        \node (native)  [fwbox, above=8mm of dfall, text width=32mm] {Run on host\\ (\texttt{ExecuteNativelyAsync})};
+        \node (abort1)  [fwaccent, below=8mm of dfall, text width=28mm] {Abort:\\ daemon unreachable};
+        % Main spine
+        \node (canon)   [fwbox, below=of ddaemon, text width=46mm] {Canonicalize host paths;\\ build container parameters};
+        \node (dpath)   [fwdecision, below=of canon] {Path safe?};
+        \node (abort2)  [fwaccent, right=14mm of dpath, text width=26mm] {Abort:\\ traversal / critical path};
+        \node (dimg)    [fwdecision, below=of dpath] {Image present locally?};
+        \node (pull)    [fwbox, right=14mm of dimg, text width=22mm] {Pull image};
+        \node (dpull)   [fwdecision, below=8mm of pull] {Pull OK?};
+        \node (abort3)  [fwaccent, below=8mm of dpull, text width=22mm] {Abort:\\ pull failed};
+        \node (create)  [fwbox, below=18mm of dimg, text width=48mm] {Create container\\(UID:GID, cgroups, cap-drop ALL, no-new-privileges, Init)};
+        \node (attach)  [fwbox, below=of create, text width=46mm] {Attach multiplexed stdout/stderr stream};
+        \node (startc)  [fwbox, below=of attach, text width=46mm] {Start container};
+        \node (decode)  [fwbox, below=of startc, text width=46mm] {Decode stream; wait for exit};
+        \node (dexit)   [fwdecision, below=of decode] {Exited?};
+        \node (cleanup) [fwbox, below=of dexit, text width=46mm] {Capture exit code; ephemeral cleanup (AutoRemove)};
+        \node (end)     [fwstart, below=of cleanup] {End (return exit code)};
+        % Edges
+        \draw [fwedge] (start) -- (probe);
+        \draw [fwedge] (probe) -- (ddaemon);
+        \draw [fwedge] (ddaemon) -- node[fwlabel] {no} (dfall);
+        \draw [fwedge] (dfall) -- node[fwlabel] {yes} (native);
+        \draw [fwedge] (dfall) -- node[fwlabel] {no} (abort1);
+        \draw [fwedge] (ddaemon) -- node[fwlabel] {yes} (canon);
+        \draw [fwedge] (canon) -- (dpath);
+        \draw [fwedge] (dpath) -- node[fwlabel] {no} (abort2);
+        \draw [fwedge] (dpath) -- node[fwlabel] {yes} (dimg);
+        \draw [fwedge] (dimg) -- node[fwlabel] {no} (pull);
+        \draw [fwedge] (dimg) -- node[fwlabel, near start] {yes} (create.north);
+        \draw [fwedge] (pull) -- (dpull);
+        \draw [fwedge] (dpull) -- node[fwlabel] {no} (abort3);
+        \draw [fwedge] (dpull.west) -| ([xshift=-3mm]abort3.west) |- node[fwlabel, near end] {yes} (create.east);
+        \draw [fwedge] (create) -- (attach);
+        \draw [fwedge] (attach) -- (startc);
+        \draw [fwedge] (startc) -- (decode);
+        \draw [fwedge] (decode) -- (dexit);
+        \draw [fwedge] (dexit.east) -- node[fwlabel] {no} ++(2.4,0) |- (decode.east);
+        \draw [fwedge] (dexit) -- node[fwlabel] {yes} (cleanup);
+        \draw [fwedge] (cleanup) -- (end);
+        \draw [fwedge] (native.west) -- ++(-8mm,0) |- (end.west);
+    \end{tikzpicture}
+    \caption{Flowchart of Ephemeral Container Execution Lifecycle}
+    \label{fig:lifecycle_flowchart}
+\end{figure}
+
+The execution begins with a daemon probe step. If the connection manager determines that the local container service (Docker/Podman daemon) is inactive or unavailable, the strategy evaluator dynamically routes the compile command to the native host environment, provided that fallback is configured and the necessary binaries are present; otherwise it aborts with a descriptive diagnostic.
+
+If the daemon is active, the runtime first enters the path safety phase: it resolves the host workspace directory and executes the recursive path canonicalization algorithm. If a directory traversal attempt or a circular symbolic link is detected, execution is immediately aborted with a safety exception to protect the host system. Only once the paths are validated does the lifecycle manager ensure the toolchain image is present locally, pulling it from the registry on a cache miss. The runtime then invokes the container creation API, applying UID/GID mapping and cgroups memory/CPU limits.
+
+Following creation, the stream multiplexer attaches to the container's standard output and error pipes. The log decoding engine processes and translates the binary-multiplexed stdout/stderr streams into user-facing console text in real time. Upon process termination, the daemon sends an exit code, triggering the ephemeral cleanup phase. During cleanup, the container is destroyed, virtual sockets are closed, and allocated resources are returned to the host OS.
+
+To detail the operational transitions and data structures across this 8-stage container lifecycle, Table~\ref{tab:lifecycle_transitions} provides a comprehensive map of the triggers, actions, target system interfaces, and success criteria for each state.
+
+\begin{table}[H]
+    \caption{Detailed State Transition Table for the 8-Stage Container Lifecycle}
+    \label{tab:lifecycle_transitions}
+    \centering
+    \footnotesize
+    \begin{tabularx}{\textwidth}{@{} l l X X X @{}}
+    \toprule
+    \textbf{Stage} & \textbf{State Name} & \textbf{Core Trigger \& Actions} & \textbf{API / Syscall Target} & \textbf{Post-Condition} \\
+    \midrule
+    1 & Uninitialized & Tool invocation trigger; checks extension configuration settings & Local configuration query & Environment variables resolved \\
+    2 & Probing Daemon & Validate Docker daemon state & GET \path{/info}, GET \path{/_ping} & Connection context established \\
+    3 & Volume Mount & Resolve, canonicalize, and verify access rights of host project path & \texttt{Get\-Canonical\-Path()} & Host mount path securely resolved \\
+    4 & Local Image Check & Inspect the local image cache for the toolchain image (no registry contacted) & GET \path{/images/[name]/json} & Local image presence determined (hit or miss) \\
+    5 & Image Pull & Cache-miss transition; download image layer blobs & POST \path{/images/create} & Image layers downloaded and extracted in cache \\
+    6 & Provisioning & Create container with resource constraints and path binds configured & POST \path{/containers/create} & Ephemeral container created in kernel space \\
+    7 & I/O Attachment & Attach and multiplex container standard streams (out, err) & POST \path{/containers/[id]/attach} & Container-to-host stream piping active \\
+    8 & Cleanup & Container execution exits; remove container and free host resources & DELETE \path{/containers/[id]} (with \path{force=true}) & Subprocesses reaped; socket connection closed \\
+    \bottomrule
+    \multicolumn{4}{@{}l}{\scriptsize Endpoints denote the Docker REST operations invoked at each lifecycle stage.}
+    \end{tabularx}
+\end{table}
+
+\section{Security Design Properties}
+\label{sec:security_design}
+Because the container strategy mounts local workspace directories into the container to perform synthesis, the architecture applies a set of least-privilege defaults. These are stated here as \emph{design properties}; a systematic threat-model analysis of them is the subject of separate work and is deliberately out of scope for this thesis.
+
+\begin{itemize}
+    \item \textbf{Non-root execution.} On rootful runtimes the container is run as the host user (\texttt{--user} host UID:GID), so build artifacts are owned by the developer rather than \texttt{root}; on rootless runtimes the runtime's own user-namespace remap applies and \texttt{--user} is omitted.
+    \item \textbf{Reduced kernel surface.} At container creation the extension drops all Linux capabilities, sets \texttt{no-new-privileges}, and caps the process count; it relies on the runtime's default seccomp profile rather than programming its own.
+    \item \textbf{Workspace path containment.} Bind-mount paths are canonicalized segment-by-segment before reaching the daemon: symbolic links are resolved with cycle detection and a bounded recursion depth, and a path that resolves outside the active workspace root is redirected to an inert in-container target rather than mounted. A residual time-of-check/time-of-use window remains, which a kernel-level resolution primitive (e.g., \texttt{openat2} with \texttt{RESOLVE\_BENEATH}) would close; this is noted as a limitation.
+    \item \textbf{Shell-less argument execution.} Commands run as an argument vector (\texttt{[executable, args\ldots]}, \texttt{UseShellExecute=false}, \texttt{tini} as PID~1) with no shell, so shell metacharacters are inert data; a secondary guard additionally rejects arguments that embed shell control operators.
+    \item \textbf{Windows transport hardening.} The named-pipe client requests \texttt{TokenImpersonationLevel.Identification} rather than the default impersonation level, so a daemon endpoint can authenticate the connecting client without being able to act on its behalf.
+    \item \textbf{Resource bounds.} CPU, memory, and process-count limits are applied through the runtime's cgroup controls so that a runaway synthesis or place-and-route run cannot exhaust host resources or starve the IDE; an out-of-memory event is confined to the container's cgroup and surfaces to the IDE as a non-zero exit code (\num{137}).
+\end{itemize}

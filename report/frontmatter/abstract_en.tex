@@ -1,0 +1,37 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter*{Abstract}
+
+Ensuring the reproducibility of build processes poses a significant challenge in embedded systems and Field-Programmable Gate Array (FPGA) development. The reliance on complex, platform-specific binaries and toolchains (e.g., Yosys, nextpnr) frequently leads to ``Environment Drift,'' where builds succeed locally but fail in collaborative environments due to system inconsistencies.
+
+To address these challenges, this thesis investigates three central Research Questions: how to establish a robust, cross-platform containerization architecture across heterogeneous host operating systems (RQ1), how to seamlessly integrate these containerized environments into a modern IDE to preserve a native user experience (RQ2), and what performance overhead is introduced by containerized execution and architecture emulation (RQ3). To resolve these questions, a modular software integration architecture is designed and implemented as a standalone extension for the \textit{OneWare Studio} IDE. Using C\# and .NET 10, a decoupled middleware is developed based on a \textbf{Hybrid Strategy Pattern}, enabling developers to switch seamlessly between high-performance native execution and hermetic containerized workflows at runtime.
+
+The architecture resolves critical barriers to adoption through four technical contributions---three addressing the research questions directly, complemented by a reproducibility feature:
+\begin{enumerate}
+    \item \textbf{Cross-Platform Interoperability (Addressing RQ1):} A dynamic User-ID injection strategy and abstract transport resolution ensure seamless operation across Windows, Linux, and macOS, specifically solving file-permission locking issues on Linux systems.
+    \item \textbf{Transparent Integration (Addressing RQ2):} Real-time stream multiplexing and log-level parsing transform raw container output into structured IDE feedback, preserving the native user experience.
+    \item \textbf{Performance Characterization (Addressing RQ3):} The system exposes a user-selectable image platform so that, on ARM64 Apple Silicon, an x86 toolchain image is executed through the host runtime's Rosetta~2 translation layer; the resulting execution overhead is characterized and decomposed.
+    \item \textbf{Temporal Reproducibility (``Time Machine''):} A dynamic tagging mechanism lets projects pin a specific toolchain image tag (optionally a content digest), providing a reproducible build environment over time.
+\end{enumerate}
+
+The empirical evaluation characterizes the cost of the containerized path rather than asserting a single headline factor. Beyond raw containerization, the extension's strategy dispatch adds a fixed per-invocation cost on the order of \SI{0.2}{\second} and negligible marginal compute overhead, so its relative cost is dominated by a constant floor that amortizes as workload size grows. On Apple Silicon the toolchain image runs under Rosetta~2 emulation, so a native-versus-container comparison on that host would conflate containerization with instruction-set emulation; native \texttt{x86\_64} hosts (Windows and Linux) reproduce the same fixed-floor structure without emulation, and the same-build native baseline on the Linux host---the one setting that isolates the container-versus-native factor---fixes it at $\alpha \approx 1$, a fixed per-invocation floor with no measurable per-instruction tax. Across the seven-workload FPGA corpus (iCE40 and ECP5 synthesis, place-and-route and bitstream packing, plus Icarus~Verilog simulation) every workload executed to success through the hermetic container, so the system eliminates configuration friction and makes toolchain execution independent of the host's package environment, resolving cascading dependency conflicts.

@@ -1,0 +1,106 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Context and State of the Art}
+\label{ch:stateoftheart}
+
+\section{The Target Ecosystem: OneWare Studio}
+OneWare Studio is a modern, cross-platform Integrated Development Environment (IDE) for FPGA development, built on the .NET 10 framework and Avalonia UI \cite{dotnet10}. \textbf{Reproducibility} across heterogeneous machines---student laptops and CI servers alike---is a recognized requirement for collaborative and educational EDA workflows \cite{boettiger2015introduction}. Unlike textual editors (e.g., Vim, Sublime), OneWare provides rich semantic features (LSP, Diagramming) that require low-latency interaction with the underlying toolchain.
+\section{Analysis of Existing Solutions}
+To contextualize the proposed architecture, we analyze five existing approaches to environment management in EDA: Package Managers (FuseSoC), Functional Package Managers (Nix/Guix), Build System Generators (SiliconCompiler), Full-IDE Virtualization (DevContainers), and toolchain-managing IDE Extensions (TerosHDL).
+
+\subsection{Package Managers (FuseSoC)}
+\textit{FuseSoC} is a package manager and build abstraction tool for FPGA designs. It focuses on dependency resolution for \textit{HDL code} (libraries, IP cores).
+\begin{itemize}
+    \item \textbf{Strength:} Excellent for managing project code dependencies.
+    \item \textbf{Weakness:} It assumes the existence of the underlying toolchain (Yosys, Vivado) on the host path. It does not solve the ``Missing Binary'' problem or handle distinct tool versions for different projects (e.g., Project A needs Yosys 0.9, Project B needs Yosys 0.33).
+\end{itemize}
+
+\subsection{Functional Package Managers (Nix/Guix)}
+Functional Package Managers (FPMs), such as Nix and GNU Guix, represent a paradigm shift in environment reproducibility by modeling software builds as pure, mathematical functions \cite{courtes2013functional}.
+\begin{itemize}
+    \item \textbf{Mechanism:} Under this paradigm, every build input---including source files, compilation flags, compiler versions, and the transitive dependency graph---is cryptographically hashed to produce a unique, immutable store path (such as \path{/nix/store/h1a2b3c4...}\allowbreak\path{-yosys-0.9}). Divergent environments coexist without interference, eliminating dependency conflicts at the filesystem level. GNU Guix extends this by using G-expressions in Scheme for deeply integrated code staging.
+    \item \textbf{Reproducibility rate:} Large-scale empirical studies on the nixpkgs repository evaluated over \num{709816} historical packages, validating a rebuildability rate exceeding \SI{99}{\percent} and a bitwise reproducibility rate between \SI{69}{\percent} and \SI{91}{\percent}~\cite{Malka2025DoesFunctional}. Scale monitoring is achieved via decentralized architectures like Lila~\cite{Malka2026Lila}.
+    \item \textbf{Critique (Process and Network Exposure):} Because FPMs operate exclusively at the filesystem level, they lack runtime namespace containment. Processes execute directly on the host, sharing the host's PID tree, network devices, and user directories, which poses substantial security risks when building untrusted EDA scripts. Furthermore, many legacy or commercial EDA tools rely on hardcoded paths (e.g., \texttt{/opt/eda}) that violate the pure store model, requiring complex binary patching (e.g., via \texttt{patchelf}) to run.
+\end{itemize}
+
+\subsection{Build System Generators (SiliconCompiler)}
+Tools like \textit{SiliconCompiler} \cite{siliconcompiler} utilize Python scripts to abstract the toolchain complexity. 
+\begin{itemize}
+    \item \textbf{Mechanism:} Input HDL $\rightarrow$ Python Script $\rightarrow$ Execution Graph $\rightarrow$ Bitstream.
+    \item \textbf{Critique (Execution Opacity):} They operate as blocking CLI wrappers. These abstractions enforce a rigid execution graph and obscure underlying compilation telemetry until termination. This opaque execution model degrades the IDE experience (RQ2), as the IDE cannot easily parse real-time errors or interject during the build process.
+\end{itemize}
+
+\subsection{Full-IDE Virtualization (VS Code DevContainers)}
+Microsoft's VS Code \textit{DevContainers} extension allows developers to open a project inside a Docker container.
+\begin{itemize}
+    \item \textbf{Mechanism:} The entire IDE ``Backend Server'' runs inside the container alongside the tools. The UI runs on the host and communicates via a socket.
+    \item \textbf{Critique (Resource Heaviness):} This paradigm imposes a rigid, resource-intensive virtualization boundary, necessitating the provisioning of a complete operating system user-space per project. For FPGA development, this often means routing X11/Wayland traffic for waveform viewers (GTKWave), which is fragile and non-performant on macOS/Windows.
+\end{itemize}
+
+\subsection{IDE Extensions (TerosHDL)}
+\textit{TerosHDL} \cite{teroshdl} is a VS Code extension that attempts to manage toolchains.
+\begin{itemize}
+    \item \textbf{Weakness:} It relies on static provisioning (downloading pre-built binaries) and platform-dependent shell scripts. This often breaks on Windows (Git Bash vs PowerShell) and lacks the hermetic guarantees of containers (RQ1).
+\end{itemize}
+
+\section{Comparative Evaluation of Virtualization Paradigms}
+To systematically evaluate the state of the art, Table~\ref{tab:virtualization_matrix} consolidates these approaches into four representative virtualization and packaging paradigms---the host-native tools (FuseSoC, SiliconCompiler, TerosHDL) share a single column---and compares them against the constraints of EDA toolchains.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparative Matrix of Development Environment Virtualization and Hermetic Packaging Paradigms in EDA}
+\label{tab:virtualization_matrix}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{@{} >{\hsize=1.2\hsize\raggedright\arraybackslash}X >{\hsize=0.95\hsize\raggedright\arraybackslash}X >{\hsize=0.95\hsize\raggedright\arraybackslash}X >{\hsize=0.95\hsize\raggedright\arraybackslash}X >{\hsize=0.95\hsize\raggedright\arraybackslash}X @{}}
+\textbf{Evaluation Criterion} & 
+\textbf{Tool-Virtualization Middleware (e.g., OneWare)} & 
+\textbf{Full-IDE Workspace Virtualization (e.g., DevContainers)} & 
+\textbf{Functional Package Managers (e.g., Nix/Guix)} & 
+\textbf{Static Package Managers \& Extensions (e.g., TerosHDL)} \\
+\midrule
+\textbf{Virtualization Boundary} & Process-level (Container engine isolating only the per-invocation tool process, bypassing IDE virtualization). & OS-level or Hypervisor-level (Container/MicroVM isolating entire IDE language server and workspace filesystem). & Filesystem-level (Cryptographic hash-based store paths; absolutely no kernel namespace isolation). & None (Native host execution via platform-dependent wrapper shell scripts). \\
+\addlinespace
+\textbf{Host Resource Footprint} & Low Disk/RAM (Shares host OS, minimal runtime context), Low CPU overhead (native execution, or binary-translated when the image architecture differs from the host). & High Disk/RAM (Requires full OS runtime per workspace, IDE server backend orchestration), Medium CPU. & High Disk (Immutable deduplicated store retaining historical artifacts), Low RAM/CPU (Native host execution). & Medium Disk (Duplicated binaries per project environment), Low RAM/CPU. \\
+\addlinespace
+\textbf{File System I/O Latency} & Native or near-native bind mounts (Extremely low latency). & High/Medium (VirtioFS or 9p protocol overhead mapping host paths to guest OS page caches). & Native host path access (Zero virtualization mapping latency). & Native host path access (Zero virtualization mapping latency). \\
+\addlinespace
+\textbf{Security Isolation Boundary} & Capability drop (\texttt{--cap-drop ALL}) and \texttt{no-new-privileges}; the container runtime supplies the namespace boundary (user namespaces when the daemon runs rootless) under Docker's default seccomp profile. & Rootless namespaces or MicroVM hypervisor physical boundaries (e.g., Virtio-blk/VirtioFS isolation). & Unprivileged native space (Relies entirely on standard POSIX user permissions). & Unprivileged native space (Unrestricted read/write access to host user filesystem). \\
+\addlinespace
+\textbf{Execution Transparency} & High (Real-time stdout/stderr multiplexed over the Docker daemon control socket, or via native wrapper scripts). & Medium (Port-forwarded IDE server, highly obfuscated background compilation and LSP translation). & Very High (Direct shell execution via blocking script wrappers). & Very High (Direct binary execution via native command line interface). \\
+\bottomrule
+\multicolumn{5}{@{}l}{\scriptsize Qualitative comparison; entries reflect the architectural characteristics of each approach.}
+\end{tabularx}
+\end{table}
+
+As shown, Nix and Guix guarantee immutable reproducibility and zero-latency filesystem access, but their lack of runtime network and process namespace containment leaves the host exposed to untrusted build scripts. Full-IDE virtualization (e.g., DevContainers) offers strong isolation for both language server and compiler, but incurs heavy host resource overhead and filesystem mapping latencies over hypervisor channels like 9pfs or VirtioFS. Tool-Virtualization Middleware (such as the OneWare Container Extension) bridges this gap by isolating only the per-invocation tool process within the container runtime, maintaining the responsiveness of the host-native IDE UI with near-native bind mount performance, and hardening the container through capability dropping (\texttt{--cap-drop ALL}), \texttt{no-new-privileges}, and a configurable network mode, under the runtime's default seccomp profile.
+
+\section{The Research Gap}
+The analysis reveals a gap for a solution that is:
+\begin{enumerate}
+    \item \textbf{Native-First:} The IDE remains on the host (preserving UI responsiveness and OS integration).
+    \item \textbf{Tool-Virtualization Only:} Only the compiler runs in the container (Lightweight).
+    \item \textbf{Transparent:} The container orchestration is hidden behind the IDE's native interaction model, adding only a small, bounded per-invocation cost rather than a workflow-visible one.
+    \item \textbf{Hybrid:} The ability to switch between Native and Container execution at runtime for performance debugging.
+\end{enumerate}
+This thesis proposes the \textbf{Reference Architecture} to fill this specific gap.

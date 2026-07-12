@@ -1,0 +1,7 @@
+## debouncer - pin constraints (GateMate eval board)
+
+set_io clk IO_SB_A8
+set_io rst IO_WA_B2
+set_io btn_in IO_WA_A2
+set_io btn_state IO_WA_A0
+set_io rising_pulse IO_WA_B0

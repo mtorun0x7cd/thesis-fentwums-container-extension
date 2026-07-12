@@ -1,0 +1,161 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+% --- Modern Light Editor Colors ---
+\definecolor{codecomment}{RGB}{0, 128, 0}      % Forest Green
+\definecolor{codekeyword}{RGB}{0, 102, 204}    % VS-like Blue
+\definecolor{codestring}{RGB}{163, 21, 21}     % VS-like Dark Red
+\definecolor{codetype}{RGB}{43, 145, 175}      % VS-like Teal
+\definecolor{codebg}{RGB}{248, 249, 250}       % Soft Light-Gray
+\definecolor{vsframe}{RGB}{220, 220, 220}      % Gray border
+\definecolor{backcolour}{rgb}{0.96, 0.96, 0.97} 
+
+% --- TColorBox Wrap ---
+\tcbset{
+    enhanced,
+    colback=backcolour,
+    boxrule=0.5pt,
+    colframe=thgray!50,
+    sharp corners,
+    drop shadow={opacity=0.2}
+}
+
+% --- Listings Language Definitions ---
+
+% CSharp Custom Definition
+\lstdefinelanguage{CSharp}{
+  sensitive=true,
+  morekeywords=[1]{
+    abstract, as, base, bool, break, byte, case, catch, char, checked,
+    class, const, continue, decimal, default, delegate, do, double, else,
+    enum, event, explicit, extern, false, finally, fixed, float, for,
+    foreach, goto, if, implicit, in, int, interface, internal, is, lock,
+    long, namespace, new, null, object, operator, out, override, params,
+    private, protected, public, readonly, ref, return, sbyte, sealed,
+    short, sizeof, stackalloc, static, string, struct, switch, this, throw,
+    true, try, typeof, uint, ulong, unchecked, unsafe, ushort, using,
+    virtual, void, volatile, while, add, alias, ascending, async, await,
+    by, descending, dynamic, equals, from, get, global, group, into, join,
+    let, on, orderby, partial, remove, select, set, value, var, where, yield
+  },
+  morekeywords=[2]{DockerService, ContainerExecutionAdapter, IToolExecutionStrategy, ToolCommand, IToolchainService, NativeService, ToolchainParser},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+}
+\lstalias{csharp}{CSharp}
+
+% JSON Custom Definition
+\lstdefinelanguage{json}{
+    basicstyle=\ttfamily\footnotesize,
+    numbers=left,
+    numberstyle=\tiny\sffamily\color{black},
+    stepnumber=1,
+    numbersep=12pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=none,
+    backgroundcolor=\color{codebg},
+    xleftmargin=32pt,
+    columns=fullflexible,
+    keepspaces=true,
+    string=[b]",
+    stringstyle=\color{codestring},
+    literate=
+     *{0}{{{\color{blue}0}}}{1}
+      {1}{{{\color{blue}1}}}{1}
+      {2}{{{\color{blue}2}}}{1}
+      {3}{{{\color{blue}3}}}{1}
+      {4}{{{\color{blue}4}}}{1}
+      {5}{{{\color{blue}5}}}{1}
+      {6}{{{\color{blue}6}}}{1}
+      {7}{{{\color{blue}7}}}{1}
+      {8}{{{\color{blue}8}}}{1}
+      {9}{{{\color{blue}9}}}{1}
+      {:}{{{\color{punct}{:}}}}{1}
+      {,}{{{\color{punct}{,}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
+}
+\colorlet{punct}{red!60!black}
+\definecolor{delim}{RGB}{20,105,176}
+
+% --- Code Listing Style (In-Text Listings) ---
+\lstdefinestyle{csharp-ci}{
+    language=CSharp,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    breakatwhitespace=true,
+    captionpos=t,
+    frame=none,
+    xleftmargin=32pt,
+    numbers=left,
+    numbersep=12pt,
+    numberstyle=\tiny\sffamily\color{black},
+    columns=flexible,
+    keepspaces=true,
+    tabsize=4,
+    showstringspaces=false,
+    commentstyle=\color{codecomment},
+    keywordstyle=\color{codekeyword}\bfseries,
+    stringstyle=\color{codestring},
+    keywordstyle=[2]\color{codetype}\bfseries,
+    morekeywords={var, async, await, record, init, with, GeneratedRegex},
+    morestring=[b]",
+    morestring=[b]',
+    literate={<}{{\textless}}1 {>}{{\textgreater}}1 {`}{{\char96}}1 {' '}{{{\textquotesingle\ \textquotesingle}}}3,
+}
+
+% --- Code Listing Style (Appendix Full-File Listings) ---
+\lstdefinestyle{csharp-appendix}{
+    language=CSharp,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    breakatwhitespace=false,
+    captionpos=t,
+    frame=none,
+    xleftmargin=32pt,
+    numbers=left,
+    numbersep=12pt,
+    numberstyle=\tiny\sffamily\color{thgray},
+    columns=flexible,
+    keepspaces=true,
+    tabsize=2,
+    showstringspaces=false,
+    commentstyle=\color{codecomment},
+    keywordstyle=\color{codekeyword}\bfseries,
+    stringstyle=\color{codestring},
+    keywordstyle=[2]\color{codetype}\bfseries,
+    morekeywords={var, async, await, record, init, with, GeneratedRegex},
+    morestring=[b]",
+    morestring=[b]',
+    breakindent=6pt,
+    postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookrightarrow\space}},
+    literate={<}{{\textless}}1 {>}{{\textgreater}}1 {`}{{\char96}}1 {' '}{{{\textquotesingle\ \textquotesingle}}}3,
+}
+
+\lstset{style=csharp-ci}

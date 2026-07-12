@@ -1,0 +1,495 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Implementation}
+\label{ch:implementation}
+
+The implementation converts the theoretical ``Hybrid Strategy Pattern'' into a concrete software artifact. This chapter details the software design decisions, the core middleware implementation in C\#/.NET 10, and the specific algorithms developed for path validation and log-stream parsing.
+
+\section{Design Decisions}
+This section outlines the key architectural and platform design choices made during the development of the container extension middleware, focusing on the selected technology stack and transport protocols.
+
+\subsection{Choice of Technology Stack (.NET 10)}
+The middleware is built on .NET 10 to ensure native interoperability with the OneWare Studio core.
+\begin{itemize}
+    \item \textbf{Task-based Asynchronous Pattern (TAP):} The async/await pattern is crucial for managing long-running FPGA synthesis jobs (which can take minutes or hours) without freezing the user interface thread. Long-running compilation tasks are run using \texttt{Task.Run} with \texttt{ConfigureAwait(false)} to prevent context-switching back to the UI thread, ensuring high responsiveness during intensive builds.
+    \item \textbf{Live Settings Access:} Operational settings are read live from the host's \texttt{ISettingsService} on each execution via \texttt{SafeGetSetting}, with change notifications consumed reactively through \texttt{GetSettingObservable} (detailed under OneWare Integration below). These settings therefore take effect mid-session without an IDE restart, and their reads require no extension-level locking. Where the strategy does maintain its own state, it synchronizes explicitly: the validated container-runtime path is memoized behind a \texttt{ReaderWriter\-Lock\-Slim} after first validation and is not re-read mid-session, and weak-process creation is serialized by a \path{System.Threading.Lock} (Listing~\ref{lst:weakprocess}).
+    \item \textbf{Cross-Platform BCL:} The \texttt{System.Runtime} libraries provide unified APIs for process management and file system I/O across Windows, Linux, and macOS, minimizing platform-specific \texttt{\#ifdef} blocks and preserving a single codebase.
+\end{itemize}
+
+\subsection{Why Direct Docker Socket vs WSL2?}
+An alternative approach considered was forcing Windows users to use WSL2 (Windows Subsystem for Linux). However, this was rejected because:
+\begin{enumerate}
+    \item \textbf{UX Friction:} Setting up WSL2 requires BIOS configuration changes (enabling virtualization features) and local Administrator privileges, which is often blocked in corporate or educational environments.
+    \item \textbf{API Control:} Interacting with \texttt{wsl.exe} via command-line parsing is brittle and prone to stdout/stderr encoding bugs. The chosen approach uses the \texttt{Docker.DotNet} library to talk directly to the Docker Engine API (using Windows Named Pipes on \texttt{\textbackslash\textbackslash.\textbackslash pipe\textbackslash docker\_engine} or Unix sockets on macOS/Linux), providing typed contracts and structured error handling.
+\end{enumerate}
+
+\section{Core Middleware (DockerExecutionStrategy)}
+The \texttt{Docker\-Execution\-Strategy} class encapsulates the lifecycle of ephemeral containers. It implements \texttt{ITool\-Execution\-Strategy} and combines the \texttt{IDisposable} pattern with per-run automatic removal so that containers are reaped---through the Docker Engine API---on disposal, cancellation, or process exit, preventing leaks under the failure modes the managed runtime can observe (a hard host crash is the one case this cannot cover).
+
+\subsection{Architecture Selection (Rosetta 2 Platform Mapping)}
+Apple Silicon support is handled by a user-selectable image platform rather than automatic detection. The extension exposes a \texttt{Platform} setting (a combo box defaulting to \texttt{auto}, with \texttt{linux/amd64}, \texttt{linux/arm64}, and \texttt{linux/arm/v7} as explicit choices). When the setting is left at \texttt{auto} the pull request leaves the platform unset and the daemon selects a variant; when the user pins a value it is forwarded to the image pull.
+\begin{lstlisting}[language=CSharp, caption={Settings-driven platform resolution}, label={lst:arch}]
+var platform = _settingsService
+    .SafeGetSetting<string>(ContainerExtensionModule.PlatformSetting, "auto")?.Trim();
+if (!string.IsNullOrEmpty(platform) &&
+    !platform.Equals("auto", StringComparison.OrdinalIgnoreCase))
+{
+    pullParams.Platform = platform; // e.g. "linux/amd64"
+}
+\end{lstlisting}
+Pinning \texttt{linux/amd64} on an Apple Silicon host causes the runtime to pull the x86\_64 image and execute it through the Rosetta~2 translation layer; this is the configuration used for the GHDL and Yosys toolchains, whose upstream images are published \texttt{linux/amd64} only. If a pinned-platform pull fails, the extension falls back to the host architecture rather than aborting.
+
+\section{Low-Level Named Pipe Impersonation Override}
+When communicating with the Docker engine on Windows, connections use named pipes. By default, these streams request \texttt{Token\-Impersonation\-Level.}\allowbreak\texttt{Impersonation}. This allows the server to impersonate the client, creating a local privilege escalation (LPE) vector if OneWare Studio runs with elevated privileges.
+
+To mitigate this, the \texttt{Secure\-Named\-Pipe\-Credentials} class replaces the \texttt{Docker.\-Dot\-Net} stream factory. It uses reflection to target the private \texttt{\_stream\-Opener} field of \texttt{Managed\-Handler} (within the \path{Microsoft.Net.Http.Client} namespace) and forces \texttt{Token\-Impersonation\-Level.}\allowbreak\texttt{Identification}. This allows identity verification while blocking the server from acting as the client.
+
+\begin{lstlisting}[language=CSharp, caption={Windows Named Pipe Impersonation Override}, label={lst:namedpipe}]
+private sealed class SecureNamedPipeCredentials : Docker.DotNet.Credentials
+{
+    private readonly Uri _endpoint;
+    public SecureNamedPipeCredentials(Uri endpoint) { _endpoint = endpoint; }
+    public override bool IsTlsCredentials() => false;
+
+    public override System.Net.Http.HttpMessageHandler GetHandler(System.Net.Http.HttpMessageHandler innerHandler)
+    {
+        if (string.Equals(innerHandler.GetType().FullName, "Microsoft.Net.Http.Client.ManagedHandler", StringComparison.Ordinal))
+        {
+            var field = innerHandler.GetType().GetField("_streamOpener", 
+                System.Reflection.BindingFlags.NonPublic | 
+                System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                var delegateType = field.FieldType;
+                var method = typeof(SecureNamedPipeCredentials).GetMethod(
+                    nameof(SecureStreamOpenerAsync), 
+                    System.Reflection.BindingFlags.NonPublic | 
+                    System.Reflection.BindingFlags.Instance);
+                if (method != null)
+                {
+                    var d = System.Delegate.CreateDelegate(delegateType, this, method);
+                    field.SetValue(innerHandler, d);
+                }
+            }
+        }
+        return innerHandler;
+    }
+
+    private async Task<Stream> SecureStreamOpenerAsync(string host, int port, CancellationToken token)
+    {
+        var pipeName = _endpoint.LocalPath;
+        var serverName = ".";
+        // Parse serverName and pipeName from URI
+        var pipe = new NamedPipeClientStream(
+            serverName,
+            pipeName,
+            PipeDirection.InOut,
+            PipeOptions.Asynchronous,
+            TokenImpersonationLevel.Identification);
+        await pipe.ConnectAsync(token).ConfigureAwait(false);
+        return pipe;
+    }
+}
+\end{lstlisting}
+
+We provide a line-by-line walk-through of the \texttt{SecureNamedPipeCredentials} implementation in Listing~\ref{lst:namedpipe}:
+\begin{itemize}
+    \item \textbf{Lines 1--4}: Declares the private sealed class \texttt{SecureNamedPipeCredentials} inheriting from the library-defined \texttt{Docker.DotNet.Credentials} class. It stores the target connection endpoint URI in the \texttt{\_endpoint} field.
+    \item \textbf{Lines 7--10}: The \texttt{GetHandler} method hooks the client HTTP handler pipeline. It checks if the inner handler corresponds to the private class \texttt{ManagedHandler} inside the \texttt{Microsoft.Net.Http.Client} namespace.
+    \item \textbf{Lines 11--13}: Uses .NET Reflection to retrieve the private, non-public field \texttt{\_stream\-Opener} of type \texttt{Delegate} (which is responsible for establishing the underlying OS transport stream).
+    \item \textbf{Lines 14--26}: Obtains the method information of the custom opener method \texttt{Secure\-Stream\-Opener\-Async} and creates a delegate instance matching the signature of \texttt{\_stream\-Opener}. It then overwrites the private delegate field on the HTTP handler using \texttt{SetValue}, injecting our custom socket/pipe constructor dynamically.
+    \item \textbf{Lines 31--33}: The custom \texttt{SecureStreamOpenerAsync} method is invoked whenever the HTTP client needs to send an API request. It parses the local pipe name from the endpoint URI (typically \texttt{/pipe/docker\_engine}).
+    \item \textbf{Lines 34--43}: Configures and instantiates the client stream. Specifically, lines 36--41 construct the BCL \texttt{NamedPipe\-Client\-Stream} using \texttt{Token\-Impersonation\-Level.\allowbreak Identification} to override the default insecure settings. The stream is connected asynchronously on line 42 and returned on line 43.
+\end{itemize}
+
+\subsection{Why Reflection Is Required}
+The downgrade cannot be expressed through the public API. \texttt{Docker.DotNet}'s \texttt{ManagedHandler} holds the stream-opening delegate (\texttt{\_streamOpener}) in a private field, so the wrapper uses reflection---\texttt{GetField} with \texttt{BindingFlags.NonPublic | BindingFlags.Instance}, then \texttt{SetValue} to install a delegate bound to \texttt{SecureStreamOpenerAsync}---to replace the default opener with one that constructs the pipe at \texttt{TokenImpersonationLevel.Identification}. At this level a pipe server may verify the connecting client's identity but cannot impersonate its token to act on its behalf, so even a rogue endpoint that calls \texttt{ImpersonateNamedPipeClient()} obtains no usable privilege. The detailed kernel-level mechanics of named-pipe impersonation and the security-reference-monitor checks that enforce this are standard Windows behavior; their full treatment, and a threat-model analysis of the transport, are out of scope here and are noted as design properties in Section~\ref{sec:security_design}. Figure~\ref{fig:seq_named_pipe} shows the resulting connection sequence.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        % Participants (lifelines)
+        \node (client) [fwactor] at (0,0) {Docker Client};
+        \node (creds)  [fwactor, draw=thred, fill=thred!10] at (3.1,0) {SecureNamedPipe\\Credentials};
+        \node (handler)[fwactor] at (6.2,0) {ManagedHandler};
+        \node (pipe)   [fwactor, draw=thorange, fill=thorange!10] at (9.3,0) {NamedPipe\\ClientStream};
+        \node (daemon) [fwactor] at (12.4,0) {Docker Daemon};
+        \foreach \x in {0,3.1,6.2,9.3,12.4} \draw [fwlifeline] (\x,-0.45) -- (\x,-9.2);
+        % Activation bars
+        \node [fwactivation, minimum height=8.3cm] at (0,-4.95) {};
+        \node [fwactivation, draw=thred, fill=thred!20, minimum height=1.1cm] at (3.1,-1.45) {};
+        \node [fwactivation, draw=thred, fill=thred!20, minimum height=4.4cm] at (3.1,-5.55) {};
+        \node [fwactivation, minimum height=6.0cm] at (6.2,-6.0) {};
+        \node [fwactivation, draw=thorange, fill=thorange!20, minimum height=2.4cm] at (9.3,-5.7) {};
+        % Setup phase (once, at client construction)
+        \draw [fwmsg] (0,-0.85) -- node[above]{Initialize client} (3.1,-0.85);
+        \draw [fwmsg] (0,-1.25) -- node[above]{GetHandler(inner)} (3.1,-1.25);
+        \draw [fwmsg] (3.1,-1.7) -- node[above,align=center]{Reflect \_streamOpener;\\ install delegate} (6.2,-1.7);
+        \draw [fwreturn] (3.1,-2.2) -- node[above]{return innerHandler} (0,-2.2);
+        % Per-request phase
+        \draw [fwmsg] (0,-3.1) -- node[above]{Send HTTP API request} (6.2,-3.1);
+        \draw [fwmsg] (6.2,-3.7) -- node[above]{invoke \_streamOpener()} (3.1,-3.7);
+        \draw [fwmsg] (3.1,-4.5) -- node[above,align=center]{new NamedPipeClientStream(\dots,\\ \texttt{Identification})} (9.3,-4.5);
+        \draw [fwmsg] (3.1,-5.35) -- node[above]{ConnectAsync()} (9.3,-5.35);
+        \draw [fwmsg] (9.3,-5.95) -- node[above,align=center]{connect (SecurityIdentification QoS:\\ server cannot impersonate client)} (12.4,-5.95);
+        \draw [fwreturn] (12.4,-6.55) -- node[above]{ack connection} (9.3,-6.55);
+        \draw [fwreturn] (9.3,-7.05) -- node[above]{stream established} (3.1,-7.05);
+        \draw [fwreturn] (3.1,-7.65) -- node[above]{return stream} (6.2,-7.65);
+        \draw [fwmsg] (6.2,-8.2) -- node[above]{write HTTP request payload} (12.4,-8.2);
+        \draw [fwreturn] (12.4,-8.65) -- node[above]{return JSON payload} (6.2,-8.65);
+        \draw [fwreturn] (6.2,-9.05) -- node[above]{return response} (0,-9.05);
+    \end{tikzpicture}
+    \caption{Sequence of the reflection-based named-pipe stream-opener replacement}
+    \label{fig:seq_named_pipe}
+\end{figure}
+
+\section{Log Stream Demultiplexing and Parsing}
+The raw output from the container is a multiplexed stream of \texttt{stdout} and \texttt{stderr}. The implementation parses this stream in real time.
+
+\subsection{Stream Multiplexing}
+Unlike a standard operating system pipe, the Docker API wraps all output multiplexing in an 8-byte frame header, as shown in Figure~\ref{fig:docker_header}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}
+        \node (b0) [fwcellhl] {Byte 0\\(stream type)};
+        \node (b1) [fwcell, right=0mm of b0] {Byte 1\\(0)};
+        \node (b2) [fwcell, right=0mm of b1] {Byte 2\\(0)};
+        \node (b3) [fwcell, right=0mm of b2] {Byte 3\\(0)};
+        \node (b4) [fwcellalt, right=0mm of b3, minimum width=32mm] {Bytes 4--7\\(payload length,\\ \texttt{uint32}, big-endian)};
+        \node (payload) [fwcell, right=6mm of b4, minimum width=46mm] {Payload data\\(raw bytes; decoded as\\ UTF-8 by the extension)};
+        \draw [thick, decoration={brace, mirror, raise=2mm}, decorate]
+            (b0.south west) -- node[below=3mm, font=\scriptsize\sffamily] {Header (8 bytes)} (b4.south east);
+        \draw [thick, decoration={brace, mirror, raise=2mm}, decorate]
+            (payload.south west) -- node[below=3mm, font=\scriptsize\sffamily] {Payload ($N$ bytes)} (payload.south east);
+    \end{tikzpicture}
+    \caption[Docker Stream Multiplexing Frame]{Docker API stream multiplexing: 8-byte frame header and payload}
+    \label{fig:docker_header}
+\end{figure}
+
+The extension consumes Docker.DotNet's \texttt{MultiplexedStream}, whose \texttt{ReadOutputAsync} demultiplexes this 8-byte-framed attach stream and tags each chunk with its target. Each frame carries:
+\begin{itemize}
+    \item \texttt{Byte 0:} Stream identifier ($0$ = stdin, $1$ = stdout, $2$ = stderr).
+    \item \texttt{Bytes 1-3:} Reserved bytes (must be $0$).
+    \item \texttt{Bytes 4-7:} Payload length encoded as a 32-bit big-endian integer.
+\end{itemize}
+The extension routes each demultiplexed chunk by its target identifier (stdout or stderr), converts the payload bytes to UTF-8 plaintext, and streams them line-by-line to the diagnostic log handlers.
+
+\subsection{Regex Source Generators}
+The extension uses .NET's source-generated regular expressions on hot paths---input validation and the scrubbing of secrets from telemetry before logs are written---so that the matcher is generated at compile time rather than built at runtime. For example, the image-reference validator is declared as:
+\begin{lstlisting}[language=CSharp, basicstyle=\ttfamily\scriptsize, caption={Source-generated image-reference validation}, label={lst:regex}]
+[GeneratedRegex(
+    @"^[a-zA-Z0-9][a-zA-Z0-9._\-]*(:\d{1,5})?(/[a-zA-Z0-9._\-]+)*(:[a-zA-Z0-9._\-]+)?(@sha256:[a-fA-F0-9]{64})?$",
+    RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking,
+    matchTimeoutMilliseconds: 1000)]
+private static partial Regex ImagePatternRegex();
+\end{lstlisting}
+By using the \texttt{[GeneratedRegex]} attribute, the C\# compiler emits specialized matcher code in Intermediate Language (IL) during the build. This eliminates the runtime compilation overhead and Large Object Heap (LOH) allocations associated with \texttt{new Regex()}, and the \texttt{NonBacktracking} option bounds worst-case matching time. The same technique backs the telemetry secret-scrubbing patterns (API keys, tokens, private keys, and credential-bearing URIs). Mapping raw tool output to log levels in the IDE is performed by lightweight line parsing rather than a source-generated diagnostic grammar.
+
+\section{Recursive Segment-by-Segment Canonicalization}
+To block directory traversal attacks (where symbolic links are used to escape the mounted project directory), host workspace paths are recursively canonicalized segment-by-segment prior to container creation.
+
+The \texttt{GetCanonicalPath} method maps path components, resolves symlinks, and maintains a recursion count to catch circular links.
+
+\begin{lstlisting}[language=CSharp, caption={Path Canonicalization implementation}, label={lst:canonicalization}]
+private static string GetCanonicalPath(string path)
+{
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+    }
+
+    var seenSymlinks = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
+    string ResolveCanonicalInternal(string currentPath, int depth)
+    {
+        if (depth > 40)
+        {
+            throw new ContainerExtension.DockerExecutionException("Too many levels of symbolic links.");
+        }
+
+        string absolutePath = currentPath;
+        if (!Path.IsPathRooted(absolutePath))
+        {
+            absolutePath = Path.Combine(Directory.GetCurrentDirectory(), absolutePath);
+        }
+
+        string root = Path.GetPathRoot(absolutePath) ?? (OperatingSystem.IsWindows() ? "C:\\" : "/");
+        if (string.IsNullOrEmpty(root))
+        {
+            root = OperatingSystem.IsWindows() ? "C:\\" : "/";
+        }
+
+        string remainder = absolutePath.Substring(root.Length);
+        var separatorChars = new char[] { '/', '\\' };
+        var components = remainder.Split(separatorChars, StringSplitOptions.RemoveEmptyEntries);
+
+        string current = root;
+
+        foreach (var component in components)
+        {
+            if (string.Equals(component, ".", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (string.Equals(component, "..", StringComparison.Ordinal))
+            {
+                var parent = Path.GetDirectoryName(current);
+                current = parent ?? root;
+                continue;
+            }
+
+            string next = Path.Combine(current, component);
+            bool isSymlink = false;
+            string? target = null;
+
+            try
+            {
+                var info = new DirectoryInfo(next);
+                if (info.Exists && info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                {
+                    target = info.LinkTarget;
+                    isSymlink = !string.IsNullOrEmpty(target);
+                }
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException) { }
+
+            if (isSymlink && target != null)
+            {
+                string canonicalSymlink = Path.GetFullPath(next);
+                if (!seenSymlinks.Add(canonicalSymlink))
+                {
+                    throw new ContainerExtension.DockerExecutionException($"Circular symbolic link detected: '{next}'");
+                }
+
+                try
+                {
+                    string resolvedTarget = Path.IsPathRooted(target) 
+                        ? ResolveCanonicalInternal(target, depth + 1)
+                        : ResolveCanonicalInternal(Path.Combine(current, target), depth + 1);
+                    current = resolvedTarget;
+                }
+                finally
+                {
+                    seenSymlinks.Remove(canonicalSymlink);
+                }
+            }
+            else
+            {
+                current = next;
+            }
+        }
+        return Path.GetFullPath(current);
+    }
+    return ResolveCanonicalInternal(path, 0);
+}
+\end{lstlisting}
+
+A detailed line-by-line analysis of the \texttt{GetCanonicalPath} method in Listing~\ref{lst:canonicalization} reveals its security mechanics:
+\begin{itemize}
+    \item \textbf{Lines 3--6}: Performs standard pre-condition validation, throwing an exception if the input path string is empty or contains only whitespace characters.
+    \item \textbf{Line 8}: Instantiates a hash set \texttt{seenSymlinks} to record the resolved path of all symlinks encountered during recursion. This is essential to prevent infinite loops from circular links. Windows paths are handled case-insensitively, while Unix paths are case-sensitive.
+    \item \textbf{Lines 10--15}: Defines the local helper function \texttt{ResolveCanonicalInternal} with a recursion limit. If the depth exceeds 40, the method aborts, bounding the symlink-chain length against long-chain denial-of-service attempts. Genuine circular links are caught separately by the \texttt{seenSymlinks} set (Lines 64--82).
+    \item \textbf{Lines 17--21}: Root-resolves the path if it is not already absolute, combining it with the current working directory.
+    \item \textbf{Lines 23--31}: Extracts the root directory and splits the path remainder into individual name segments using directory separators.
+    \item \textbf{Lines 35--47}: Loops through each segment. Skip patterns are applied for single dot \texttt{.} segments, and parent references \texttt{..} are resolved by traversing back up to the parent directory.
+    \item \textbf{Lines 49--60}: Builds the path of the next child component. It uses a \texttt{Directory\-Info} object to check if the component exists on the disk and represents a reparse point (symlink). If it is a symlink, it reads the target path.
+    \item \textbf{Lines 64--82}: If a symlink is found, its target is recursively canonicalized by calling \texttt{ResolveCanonicalInternal} with an incremented depth. The symlink path is added to \texttt{seenSymlinks} beforehand and removed in a \texttt{finally} block to ensure accurate tracking during traversal.
+    \item \textbf{Lines 84--87}: If the component is a regular directory, it simply appends it. The final resolved path is returned as a fully qualified path.
+\end{itemize}
+
+\section{Weak Process Lifecycle \& Cancellation Propagation}
+The OneWare Studio plugin interface expects standard operating system processes (\texttt{Process}) returned via the \texttt{ITool\-Execution\-Strategy} interface to monitor execution status and propagate user cancellation. Since container execution is carried out asynchronously via HTTP requests to the Docker socket rather than local child processes, a wrapper strategy was required.
+
+The extension implements \texttt{StartWeakProcess}, which starts a dummy process (\texttt{ping} on Windows, \texttt{sleep} on Unix) to satisfy the IDE's process handle contracts, and hooks its lifecycle events to the container's execution.
+
+\begin{lstlisting}[language=CSharp, caption={Weak Process Lifecycle Wrapper}, label={lst:weakprocess}]
+public WeakReference<Process> StartWeakProcess(ToolCommand command)
+{
+    lock (WeakProcessLock)
+    {
+        var runCts = new CancellationTokenSource();
+        var dummyProcess = new Process();
+        dummyProcess.StartInfo = new ProcessStartInfo
+        {
+            FileName = OperatingSystem.IsWindows() ? "ping" : "sleep",
+            Arguments = OperatingSystem.IsWindows() ? "127.0.0.1 -n 86400" : "86400",
+            CreateNoWindow = true,
+            UseShellExecute = false
+        };
+        dummyProcess.EnableRaisingEvents = true;
+        dummyProcess.Exited += (s, e) =>
+        {
+            try { runCts.Cancel(); }
+            catch (ObjectDisposedException) { }
+        };
+
+        try { dummyProcess.Start(); }
+        catch (Exception ex)
+        {
+            ContainerTelemetry.TrackError("DockerExecutionStrategy", "Failed to start dummy process in StartWeakProcess", ex);
+            dummyProcess = new Process();
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await ExecuteAsync(command, runCts.Token).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                ContainerTelemetry.TrackError("DockerExecutionStrategy", "StartWeakProcess task crashed", ex, command.Executable);
+            }
+            finally
+            {
+                try
+                {
+                    if (!dummyProcess.HasExited) { dummyProcess.Kill(true); }
+                }
+                catch { }
+                try { runCts.Dispose(); }
+                catch { }
+            }
+        }, CancellationToken.None);
+
+        return new WeakReference<Process>(dummyProcess);
+    }
+}
+\end{lstlisting}
+
+We trace the operational flow of \texttt{StartWeakProcess} in Listing~\ref{lst:weakprocess}:
+\begin{itemize}
+    \item \textbf{Lines 3--6}: Spawns a critical synchronization lock \texttt{WeakProcessLock} to ensure thread-safe process handle creation. It then creates a cancellation token source.
+    \item \textbf{Lines 7--13}: Instantiates a dummy \texttt{Process} using the native operating system shell executables. On Windows, it runs \texttt{ping 127.0.0.1 -n 86400} to idle, while on Unix it runs \texttt{sleep 86400}.
+    \item \textbf{Lines 14--19}: Hooks the process exit event. If the process is terminated (e.g., killed by the IDE or manually stopped by the user), the event handler immediately cancels the token source.
+    \item \textbf{Lines 21--26}: Starts the dummy process and captures any exceptions.
+    \item \textbf{Lines 28--48}: Dispatches a background task using \texttt{Task.Run} to execute the container synthesis run. This task runs asynchronously, taking the cancellation token from the dummy process. If the token is canceled, it calls the Docker API to stop the container.
+    \item \textbf{Lines 38--47}: The \texttt{finally} block ensures that if the container completes its task, the dummy process is cleaned up immediately, freeing the IDE process slot.
+\end{itemize}
+
+If the user clicks ``Cancel'' inside OneWare Studio, the IDE kills the returned dummy process. The dummy process's \texttt{Exited} event triggers cancellation of the background \texttt{Cancellation\-Token\-Source}, forcing the container runtime to send a stop signal to the Docker API and tear down the container.
+
+\section{Argument-Vector Construction and Namespace Mapping (DockerCommandBuilder)}
+Rather than reconstructing a shell command string, the \texttt{Docker\-Command\-Builder} produces an \emph{argument vector} that the container executes directly, with no shell. Each token from the IDE's \texttt{ToolCommand} has its host path mapped to the corresponding container path where applicable, and path separators are normalized for the Linux container filesystem. Because the tokens are passed as a vector and never concatenated into a shell line, shell metacharacters cannot be reinterpreted---they occupy inert argument slots, a property the project's \texttt{CommandInjectionProofOfConceptTests} suite verifies directly. As defense in depth, a separate check in \texttt{DockerExecutionStrategy.ExecuteAsync}---applied before the vector is built---rejects an executable name containing any shell metacharacter and rejects any argument that embeds a command separator or nested-shell construct (\texttt{\&\&}, \texttt{||}, command substitution, or---outside Yosys scripts---\texttt{;}).
+
+Listing~\ref{lst:commandbuilderescape} shows the token-mapping and emission loop.
+
+\begin{lstlisting}[language=CSharp, caption={Argument-vector construction (shell-less)}, label={lst:commandbuilderescape}]
+var cmdTokens = new List<string> { executable };
+foreach (var arg in command.Arguments)
+{
+    // Map a host path to its container-mount equivalent where applicable;
+    // otherwise keep the token unchanged.
+    var mapped = ShouldMapArgument(arg)
+        ? MapPathToContainer(arg, workingDirFull, workingDirCanonical)
+        : arg;
+
+    // Each mapped token becomes one argv element. No shell escaping or quoting is
+    // applied: the token is delivered verbatim to the program through execve,
+    // exactly as OneWare's native execution would, so shell metacharacters are
+    // inert data rather than syntax.
+    cmdTokens.Add(NormalizeSeparators(mapped));
+}
+// cmdTokens becomes the container Cmd vector [executable, args...], executed
+// without a shell (tini as PID 1, HostConfig.Init = true).
+\end{lstlisting}
+
+A walk-through of the routine in Listing~\ref{lst:commandbuilderescape}:
+\begin{itemize}
+    \item \textbf{Path resolution and mapping:} each raw argument is tested with \texttt{ShouldMapArgument}; path-like arguments have their host directory rewritten to the container mount root (\texttt{/workspace}) using the canonicalized host project path.
+    \item \textbf{Separator normalization:} backslashes are converted to forward slashes (\path{/}) for the Linux container filesystem.
+    \item \textbf{Verbatim argv emission:} each mapped token is appended as exactly one \texttt{Cmd} element---no escaping, quoting, or per-token rejection. Because the vector is handed to \texttt{execve} through the container entrypoint (\texttt{tini}), a metacharacter such as \texttt{\&\&} lands in a single argument slot and is never parsed as shell syntax.
+    \item \textbf{Defense-in-depth guard (elsewhere):} the shell-operator rejection is not part of this builder. It lives in \texttt{DockerExecutionStrategy.ExecuteAsync}, where the executable name is screened against a \texttt{Search\-Values<char>} set of shell metacharacters and a narrow per-argument denylist rejects \texttt{\&\&}, \texttt{||}, command substitution, and \texttt{;} (the last suppressed for Yosys). Because safety already follows from the shell-less argv model, this check is a secondary boundary, not the primary one.
+\end{itemize}
+\section{Dynamic Registry Client and Tag Discovery}
+To populate the toolchain-version selector with the tags available for an image, the architecture implements a dedicated registry client (\texttt{RegistryClient}) that queries public registries over HTTPS, guards against server-side request forgery, and caches results briefly.
+
+Listing~\ref{lst:registryclientimpl} shows the tag-query entry point and its Docker Hub backend.
+
+\begin{lstlisting}[language=CSharp, basicstyle=\ttfamily\scriptsize, caption={Registry tag query and caching (simplified)}, label={lst:registryclientimpl}]
+// Public entry point: returns the tags for an image reference, cached briefly.
+public static async Task<List<string>> FetchTagsAsync(
+    string imageReference, CancellationToken cancellationToken = default)
+{
+    // Serve from cache while fresh: 60 s for a populated list, 10 s if empty.
+    if (TagsCache.TryGetValue(imageReference, out var cached))
+    {
+        var maxAgeMs = cached.tags.Count == 0 ? 10_000 : 60_000;
+        if (Environment.TickCount64 - cached.cacheTimeTicks < maxAgeMs)
+            return new List<string>(cached.tags);      // hand out a copy
+    }
+
+    var parts = ParseImageReference(imageReference);   // registry/namespace/repo
+    // SSRF gate (omitted): reject hosts that resolve to loopback/internal addresses.
+    List<string> tags = parts.Registry switch
+    {
+        "" or "docker.io" or "registry-1.docker.io"
+            => await FetchDockerHubTagsAsync(parts.Namespace, parts.Repository,
+                                             cancellationToken),
+        "ghcr.io" => await FetchGhcrTagsAsync(parts.Namespace, parts.Repository,
+                                              cancellationToken),
+        _ => await FetchGenericV2TagsAsync(parts.Registry, parts.Namespace,
+                                           parts.Repository, cancellationToken),
+    };
+    AddToCache(imageReference, tags);                  // stamps insertion time
+    return tags;
+}
+
+// Docker Hub backend: anonymous GET, no bearer token; source-generated JSON.
+private static async Task<List<string>> FetchDockerHubTagsAsync(
+    string ns, string repo, CancellationToken ct)
+{
+    var url = $"https://hub.docker.com/v2/repositories/{ns}/{repo}"
+            + "/tags?page_size=20&ordering=last_updated";
+    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    using var response = await SendWithRetryAsync(request, ct);
+    response.EnsureSuccessStatusCode();
+
+    using var stream = await response.Content.ReadAsStreamAsync(ct);
+    var res = await JsonSerializer.DeserializeAsync(
+        stream, RegistryJsonContext.Default.HubResponse, ct);  // reflection-free
+    var list = new List<string>();
+    foreach (var r in res?.Results ?? [])
+        if (!string.IsNullOrEmpty(r.Name)) list.Add(r.Name);
+    return list;
+}
+\end{lstlisting}
+
+A detailed walk-through of the registry query routine in Listing~\ref{lst:registryclientimpl}:
+\begin{itemize}
+    \item \textbf{Local Caching:} To avoid Docker Hub's per-IP rate limits on unauthenticated requests, the client checks its in-memory cache before making external network calls. The cache is managed using a thread-safe dictionary with a short absolute-age freshness window---60 seconds for a populated tag list, 10 seconds for an empty result---evaluated since insertion, so an entry is not restamped when it is read.
+    \item \textbf{Per-Registry Dispatch and Authentication:} \texttt{FetchTagsAsync} parses the reference and routes it to the matching backend. The Docker Hub listing (\path{hub.docker.com/v2/repositories/.../tags}) is unauthenticated; the GitHub Container Registry (\texttt{ghcr.io}) obtains a short-lived pull-scope bearer token from GHCR's well-known token endpoint before listing tags, whereas generic \path{/v2/} registries obtain one from the token endpoint advertised in the registry's \texttt{WWW-Authenticate} challenge after an initial unauthorized response. An SSRF guard rejects any reference whose host resolves to a loopback or internal address.
+    \item \textbf{Source-Generated Deserialization:} The JSON tag list is deserialized directly from the response stream through the source-generated \texttt{RegistryJsonContext} (a compile-time \texttt{JsonSerializerContext}, avoiding reflection for AOT compatibility) into \texttt{HubResponse} for Docker Hub or \texttt{GhcrTagsResponse} for GHCR. The extracted tag names populate the toolchain-version drop-down menu in OneWare Studio, allowing users to select different toolchain versions.
+\end{itemize}
+
+\section{OneWare Integration}
+The integration layer bridges the internal \path{IToolExecutionStrategy} service to the OneWare Studio plugin infrastructure (\path{OneWare.Essentials}).
+\begin{itemize}
+    \item \textbf{Dependency Injection:} The \texttt{Docker\-Execution\-Strategy} is registered as a Singleton in the \texttt{IService\-Collection} within the module's service registration.
+    \item \textbf{Live Settings Reads:} Operational settings---image, platform, resource limits, and \texttt{Container\-Extension\_}\allowbreak\texttt{Allow\-Native\-Fallback}---are read live from \texttt{ISettings\-Service} on each execution via \texttt{Safe\-Get\-Setting}, so changes take effect without an IDE restart. Separately, the module subscribes to the Telemetry Retention setting through \texttt{ISettings\-Service.Get\-Setting\-Observable} and purges the telemetry log immediately when it is set to \texttt{None}.
+\end{itemize}
+
+

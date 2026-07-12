@@ -1,0 +1,39 @@
+# =============================================================================
+# EditorConfig — Master's Thesis
+# =============================================================================
+
+root = true
+
+# ── Baseline ─────────────────────────────────────────────────────────────────
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ── LaTeX ────────────────────────────────────────────────────────────────────
+
+[*.{tex,bib,cls,sty,bst}]
+indent_size = 2
+max_line_length = 100
+
+# ── Code Citation Files ──────────────────────────────────────────────────────
+
+[*.cff]
+indent_size = 2
+
+# ── Shell ────────────────────────────────────────────────────────────────────
+
+[*.sh]
+indent_size = 2
+
+# ── Git Config ───────────────────────────────────────────────────────────────
+
+[.git*]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false

@@ -1,0 +1,46 @@
+# =============================================================================
+# Git Attributes — Master's Thesis
+# Enforces consistent line endings across platforms.
+# =============================================================================
+
+# ── Default ──────────────────────────────────────────────────────────────────
+* text=auto eol=lf
+
+# ── LaTeX ────────────────────────────────────────────────────────────────────
+*.tex       text diff=tex
+*.bib       text diff=bibtex
+*.cls       text
+*.sty       text
+*.bst       text
+
+# ── Documentation ────────────────────────────────────────────────────────────
+*.md        text diff=markdown
+*.txt       text
+*.yml       text
+*.yaml      text
+*.json      text
+*.cff       text
+
+# ── Shell / Config ───────────────────────────────────────────────────────────
+*.sh        text eol=lf
+.editorconfig text
+.gitignore  text
+.gitmodules text
+
+# ── Binary / Media (never touch line endings) ────────────────────────────────
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.pdf       binary
+*.eps       binary
+*.svg       binary
+*.zip       binary
+*.gz        binary
+*.tar       binary
+
+# ── GitHub Linguist Overrides ────────────────────────────────────────────────
+# Exclude submodules from language statistics
+OneWare/**                    linguist-vendored
+OneWare.GhdlExtension/**      linguist-vendored
+FEntwumS.NetlistViewer/**     linguist-vendored

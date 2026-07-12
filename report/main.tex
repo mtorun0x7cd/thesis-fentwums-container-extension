@@ -1,0 +1,87 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\documentclass[12pt, a4paper, oneside]{report}
+
+\input{setup/packages}
+\input{setup/metadata}
+\hypersetup{
+    pdftitle={\ThesisTitle},
+    pdfauthor={\ThesisAuthor},
+    pdfsubject={Master's Thesis},
+    pdfkeywords={FPGA Toolchains, Docker Middleware, Hybrid Strategy Pattern, Reproducible Builds, Cross-Platform Architecture, .NET 10, Apple Silicon Emulation, User-ID Mapping, Version Pinning, Electronic Design Automation, OneWare Studio}
+}
+\input{setup/design} % Modern Design
+\input{setup/code_styles}
+
+\begin{document}
+
+\pagenumbering{roman}
+\pagestyle{plain}
+\input{frontmatter/titlepage}
+\clearpage
+
+\input{frontmatter/declaration}
+\clearpage
+
+\input{frontmatter/abstract_en}
+\clearpage
+
+
+\input{frontmatter/keywords}
+\clearpage
+
+\tableofcontents
+\clearpage
+
+\listoffigures
+\clearpage
+
+\listoftables
+\clearpage
+
+\lstlistoflistings
+\clearpage
+
+\input{frontmatter/acronyms}
+\clearpage
+
+\clearpage
+\pagenumbering{arabic}
+\pagestyle{fancy}
+
+\include{chapters/01_introduction}
+\include{chapters/02_background}
+\include{chapters/03_stateoftheart}
+\include{chapters/04_concept}
+\include{chapters/05_implementation}
+\include{chapters/06_evaluation}
+\include{chapters/07_conclusion}
+
+\printbibliography[heading=bibintoc, title={References}]
+
+\appendix
+\include{appendices/appendix_a_code}
+\include{appendices/appendix_b_manual}
+\include{appendices/appendix_c_logs}
+
+\end{document}

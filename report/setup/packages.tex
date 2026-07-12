@@ -1,0 +1,88 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+% --- Fonts & Encoding (LuaLaTeX / OpenType via fontspec) ---
+% Body text : TeX Gyre Termes      (Times-compatible serif)
+% Headings   : TeX Gyre Heros       (Helvetica-compatible sans)
+% Monospace  : Inconsolata (zi4)    (matches the former zi4 package)
+% Mathematics: TeX Gyre Termes Math (OpenType, pairs with the body serif)
+% All four ship with TeX Live full, so the CI container needs no extra fonts.
+\usepackage{fontspec}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{unicode-math}
+\setmainfont{TeX Gyre Termes}
+\setsansfont{TeX Gyre Heros}[Scale=0.90]
+\setmonofont{Inconsolatazi4}[
+    Extension   = .otf,
+    UprightFont = *-Regular,
+    BoldFont    = *-Bold,
+    ItalicFont  = *-Regular,
+    Scale       = 0.85
+]
+\setmathfont{TeX Gyre Termes Math}
+
+% --- Layout & Typography ---
+\usepackage{geometry}
+\geometry{left=3cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+\setlength{\emergencystretch}{3em}
+\sloppy
+\hbadness=10000
+\vbadness=10000
+\usepackage{microtype} % Improved typography spacing
+\usepackage{fancyhdr}
+\usepackage[absolute,overlay]{textpos}
+\usepackage{multicol}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{siunitx}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% --- Graphics & Tables ---
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{titlesec} 
+\usepackage[nohyperlinks]{acronym}
+\usepackage{tikz}
+\usetikzlibrary{positioning,shapes,shapes.geometric,shapes.multipart,arrows,arrows.meta,calc,fit,backgrounds,chains,decorations.pathreplacing,decorations.markings}
+\usepackage{listings}
+\usepackage{upquote}
+\usepackage[most]{tcolorbox} % Modern Boxes
+
+% --- TH Koeln CI Colors ---
+% Moved to setup/design.tex
+
+% --- Modern Heading Styles ---
+% Moved to setup/design.tex
+
+% --- Bibliography (IEEE Style) ---
+\usepackage[style=ieee, backend=biber]{biblatex}
+\addbibresource{bibliography.bib}
+
+% --- PDF Navigation ---
+\usepackage[hidelinks, unicode, hypertexnames=false]{hyperref}

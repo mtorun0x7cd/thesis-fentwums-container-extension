@@ -1,0 +1,13 @@
+## seven_seg_decoder - pin constraints (GateMate eval board)
+
+set_io digit[0] IO_WA_B2
+set_io digit[1] IO_WA_A2
+set_io digit[2] IO_WA_A0
+set_io digit[3] IO_WA_B0
+set_io seg[0] IO_WA_A1
+set_io seg[1] IO_WA_B1
+set_io seg[2] IO_WA_A3
+set_io seg[3] IO_WA_B5
+set_io seg[4] IO_WA_A8
+set_io seg[5] IO_WA_B8
+set_io seg[6] IO_WA_B7

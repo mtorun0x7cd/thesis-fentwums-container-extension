@@ -1,0 +1,131 @@
+# =============================================================================
+# Master's Thesis — .gitignore
+# =============================================================================
+
+# ── OS Artifacts ──────────────────────────────────────────────────────────────
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon\r
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+# ── IDEs & Editors ───────────────────────────────────────────────────────────
+
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.vs/
+*.bak
+
+# Build & Agent Artifacts
+.tmp/
+.tmp.nosync/
+
+# ── LaTeX (Thesis Document) ─────────────────────────────────────────────────
+
+# Auxiliary / intermediate build files
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.lol
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+
+# Bibliography
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+
+# Beamer / presentation
+*.nav
+*.snm
+*.vrb
+
+# Glossary / nomenclature
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.ist
+*.nlo
+*.nls
+
+# Index
+*.idx
+*.ilg
+*.ind
+
+# LaTeX-generated PDFs (thesis build artefacts)
+# Use 'git add -f' if you need to commit a specific PDF intentionally.
+*.pdf
+
+# latexmk output directory
+out/
+
+# ── Local / Legacy ───────────────────────────────────────────────────────────
+
+legacy_archive/
+Thesis\ Notizen\ *.txt
+report/bin/
+
+# ── Evaluation Apparatus ──────────────────────────────────────────────────────
+evaluation/harness/bin/
+
+# Simulation & Waveform Outputs
+*.vcd
+*.fst
+*.ghw
+*.upk_*
+
+# Deliverables
+archive/
+
+# Administrative files
+report/admin/
+
+# Secondary documents — excluded from the remote for now (kept locally, re-added later)
+paper/
+slides/
+handout/
+
+# Validation Scripts
+# Note: Scripts are now tracked for CI/CD use.
+
+# Test Infrastructure files kept local
+TEST_INFRA.md
+TEST_READY.md
+deep_think_prompt.md
+
+
+# ── Kolloquium preparation (private learning material, never committed) ─────
+/kolloquium/

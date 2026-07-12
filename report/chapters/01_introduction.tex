@@ -1,0 +1,52 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Introduction}
+\label{ch:introduction}
+
+The development of embedded systems and Field-Programmable Gate Arrays (FPGAs) has evolved significantly over the past decade. Modern hardware designs typically rely on extensive, often open-source toolchains---such as \textit{Yosys} for synthesis~\cite{wolf2013yosys}, \textit{nextpnr} for place-and-route~\cite{shah2019nextpnr}, and \textit{Verilator}~\cite{snyder2004verilator} and \textit{Icarus~Verilog} for simulation. While these tools offer powerful capabilities, ensuring the reproducibility of build processes across heterogeneous development environments remains a critical challenge in Electronic Design Automation (EDA).
+
+\section{Motivation and Problem Context}
+In collaborative projects, a phenomenon widely referred to as ``Environment Drift'' poses a significant barrier to efficiency. A build process that succeeds on a developer's local machine frequently fails on a colleague's workstation or the Continuous Integration (CI) server due to subtle differences in system libraries, binary versions, or path configurations~\cite{courtes2013functional}.
+
+In the specific context of \textit{OneWare Studio}, an Integrated Development Environment (IDE) aiming to unify FPGA development, the reliance on locally installed toolchains presents a bottleneck. Users are currently required to manually install and configure complex binaries that vary significantly between operating systems (Windows 11, macOS Tahoe 26.6, Ubuntu 26.04).
+
+\section{Problem Statement}
+Containerization technologies (e.g., Docker) offer a potential solution by encapsulating build tools into immutable artifacts (``Hermetic Builds''). However, standard Docker workflows typically require interaction via the Command Line Interface (CLI), which disrupts the seamless user experience expected from a GUI-based IDE. Specifically, three technical challenges inhibit widespread adoption:
+
+\begin{enumerate}
+    \item \textbf{System Heterogeneity (RQ1):} The diversity of host platforms creates a compatibility matrix that is difficult to maintain natively. Integrating Docker requires handling platform-specific constraints, such as the divergence between Named Pipes on Windows and Unix Domain Sockets on Linux/macOS. Additionally, Linux file permissions often cause artifacts to be locked by the \texttt{root} user.
+    \item \textbf{Integration Gap (RQ2):} Developers must currently switch contexts between the IDE and a terminal to run container commands, breaking the ``Flow'' state. Real-time feedback, such as streamed build output in the IDE console, is lost.
+    \item \textbf{Performance Overhead (RQ3):} On Apple Silicon (ARM64), running the reference toolchain image---published for \texttt{x86\_64} (\texttt{linux/amd64}) only---creates an instruction-set mismatch with the host. Executing it through the runtime's Rosetta~2 translation layer introduces a performance penalty that must be quantified to justify the trade-off.
+\end{enumerate}
+
+\section{Research Objectives}
+To address the described problem statement, this thesis follows a structured approach ranging from architectural design to user-experience validation. The research is guided by the following three research questions, ordered to mirror the development lifecycle. RQ1 and RQ3 are assessed quantitatively in the evaluation---for RQ3, the marginal cost of the integration layer is measured directly on all three hosts, the emulated-regime penalty is cited from the literature, and the native-versus-container factor is isolated only on a host with a same-build native baseline and is measured on the Linux host, the only one of the three that admits such a baseline (Machine~2). RQ2, concerned with the transparency and feel of the integration, is assessed qualitatively against the implemented behavior:
+
+\begin{itemize}
+    \item \textbf{RQ1 (Architectural Foundation):} What architectural patterns ensure cross-platform compatibility for container orchestration across Windows, Linux, and macOS, specifically addressing low-level challenges like User-ID mapping and transport protocols?
+    \item \textbf{RQ2 (Transparent Integration):} How can these containerized environments be integrated into a .NET-based IDE to provide a ``Native User Experience,'' preserving essential features like real-time streamed log feedback and structured diagnostics?
+    \item \textbf{RQ3 (Performance Viability):} What is the measurable performance overhead of this containerized approach compared to native execution, particularly when bridging architecture gaps (x86 on ARM64)?
+\end{itemize}
+
+\section{Structure of the Thesis}
+The remainder of this thesis is organized as follows. Chapter~\ref{ch:background} establishes the theoretical foundations of containerization, virtualization, and cross-architecture execution. Chapter~\ref{ch:stateoftheart} surveys the state of the art in reproducible EDA tooling and positions this work against existing approaches. Chapter~\ref{ch:concept} presents the modular architecture---the hybrid execution strategy, transport resolution, and container lifecycle---which Chapter~\ref{ch:implementation} then realizes in detail. Chapter~\ref{ch:evaluation} reports the empirical evaluation of the integration overhead and cross-platform output determinism across the test machines, and Chapter~\ref{ch:conclusion} summarizes the contributions and outlines directions for future work.

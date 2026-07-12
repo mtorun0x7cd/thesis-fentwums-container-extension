@@ -1,0 +1,46 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Conclusion}
+\label{ch:conclusion}
+This chapter summarizes the findings of this work and outlines final conclusions and future work.
+
+\section{Summary}
+This thesis presented a modular integration architecture for containerized FPGA toolchains.
+\begin{itemize}
+    \item \textbf{Contributions:} A modular Hybrid Strategy Pattern for transparent, opt-in container dispatch; cross-platform permission and transport handling (host UID/GID injection, Unix-socket and named-pipe transports); and a toolchain-image pinning mechanism for reproducible build environments.
+    \item \textbf{Result:} The solution eliminates ``Environment Drift'' while maintaining native IDE responsiveness. The overhead the extension adds beyond raw containerization is small and dominated by a fixed per-invocation startup cost that amortizes as design size grows; under x86-on-ARM64 emulation an additional translation tax applies. Native \texttt{x86\_64} hosts (Machine~3, Windows, and Machine~2, Linux) reproduced the same fixed-floor structure free of emulation, and the same-build native baseline on Machine~2 fixed the residual container-versus-native factor at $\alpha \approx 1$---a fixed lifecycle floor with no per-instruction tax---completing the overhead picture across all three hosts. Crucially, across the seven-workload FPGA corpus---iCE40 and ECP5 synthesis, place-and-route and bitstream packing, plus Icarus~Verilog simulation---every workload executed to success through the hermetic container, where a native toolchain would be subject to package drift, so the container makes toolchain execution independent of the host's package environment and resolves cascading dependency conflicts.
+\end{itemize}
+
+\section{Evaluation Summary and Key Architectural Insights}
+The central empirical insight of this work is a decomposition of the containerized execution cost rather than a single overhead figure. The cost of an invocation is the sum of a container lifecycle floor---container creation, namespace setup, volume mounting, and stream attachment, measured at roughly \SI{0.25}{\second} for the raw CLI backend on Machine~1 (\SI{0.33}{\second} and \SI{0.42}{\second} on Machines~2 and~3)---and a per-instruction execution tax that is unity for native-architecture execution and greater than unity under binary translation. On top of that floor, the extension's strategy dispatch adds only a bounded, fixed marginal cost---roughly \SI{0.18}{\second} per invocation on Machine~1, tightly clustered across all seven FPGA workloads and matching the bare no-op floor delta---and no measurable marginal compute overhead, so its relative cost is large only for sub-second tasks and amortizes toward negligibility as compilation time grows. On Apple Silicon the toolchain image executes under Rosetta~2, so any native-versus-container comparison on Machine~1 would conflate containerization with instruction-set emulation; the translation tax itself is small and approximately constant at scale. Native \texttt{x86\_64} measurements on Machine~3 (Windows) and Machine~2 (Linux) confirmed the fixed-floor structure without emulation, and the same-build native baseline on Machine~2---the one host where the native and containerized toolchains are the identical build---fixed the container-versus-native factor at $\alpha \approx 1$: the additive container floor stays near-constant at \SIrange{0.26}{0.33}{\second} whether the native work beneath it is \SI{16}{\milli\second} or half a second, so containerization adds a fixed lifecycle cost and no per-instruction tax. A systematic comparison of container runtimes (Docker Desktop, Podman, OrbStack, and the WSL2 backend) is left to future work, as the present measurements were collected on a single runtime per host.
+
+As a cross-platform robustness detail, the Windows named-pipe transport requests \texttt{TokenImpersonationLevel.Identification} rather than the default impersonation level, so a daemon endpoint can verify the connecting client's identity without being able to act on its behalf. This, together with the remaining container-hardening defaults---non-root execution, dropped Linux capabilities, \texttt{no-new-privileges}, a process-count cap, and shell-less argument execution---is a design property of the architecture. A dedicated threat-model analysis of these mechanisms is the subject of separate work and is deliberately out of scope for this thesis.
+
+To ensure observability without data corruption, the telemetry pipeline separates two write paths. High-frequency error events are enqueued lock-free into an unbounded channel and drained by a single background consumer, decoupling the calling thread from disk I/O. The execution-log file write, by contrast, is serialized across threads and processes by a reader-writer lock (\path{ReaderWriterLockSlim}) and a system-wide mutex (\path{System.Threading.Mutex}), so that concurrent compilation steps cannot interleave or corrupt the structured log. This division keeps the hot path non-blocking while guaranteeing that persisted telemetry is cleanly serialized.
+
+\section{Future Work}
+Future development on the OneWare Container Extension will focus on two primary architectural enhancements:
+\begin{itemize}
+    \item \textbf{Multi-Architecture OCI Registry Manifests:} Optimizing cross-architecture performance on ARM64 host machines by dynamically querying OCI Registry Manifests to verify the existence of native \texttt{linux/arm64} image variants before falling back to Rosetta 2 translation or QEMU emulation.
+    \item \textbf{Hardware-in-the-Loop (HIL) Sandboxing:} Integrating USB device forwarding mechanisms (e.g., forwarding FTDI or UART devices via \texttt{usbipd} or native Linux device nodes) to allow programmer tools like \texttt{openFPGALoader} and \texttt{iceprog} to deploy compiled bitstreams directly onto target FPGA boards securely from within the sandbox.
+\end{itemize}

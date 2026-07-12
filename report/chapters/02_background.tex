@@ -1,0 +1,239 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Theoretical Background}
+\label{ch:background}
+
+This chapter establishes the fundamental concepts and technologies required for the design of the containerized integration architecture. It provides a detailed analysis of virtualization paradigms, the internal mechanisms of the Docker engine, and the specific requirements of modern FPGA design flows.
+
+\section{Virtualization Paradigms in Software Engineering}
+Virtualization is the abstraction of computing resources to create isolated execution environments. In the context of this thesis, two primary paradigms are relevant: Hardware Virtualization (Hypervisors) and Operating System-level Virtualization (Containers)~\cite{felter2015performance}. The choice between these paradigms determines the execution overhead, startup latency, and isolation characteristics of the compilation environment.
+
+To quantitatively contrast these paradigms, Table~\ref{tab:virtualization_paradigms} lists the key architectural properties and associated latency costs.
+
+\begin{table}[H]
+    \caption{Comparative Analysis of Virtualization Paradigms and System Latency}
+    \label{tab:virtualization_paradigms}
+    \centering
+    \begin{tabularx}{\textwidth}{@{} >{\raggedright\arraybackslash}p{4.0cm} X X @{}}
+    \toprule
+    \textbf{Architectural Metric} & \textbf{Hardware Virtualization (VM)} & \textbf{OS-level Virtualization (Container)} \\
+    \midrule
+    \textbf{CPU State Transition} & Hypervisor Trap / VM-Exit ($\approx \num{1000}\text{--}\num{3000}$ CPU cycles) & Native Syscall Trap ($\approx \num{100}\text{--}\num{300}$ CPU cycles) \\
+    \textbf{Page Table Translation} & Two-Dimensional Paging (EPT/SLAT) & Native MMU Page Table Translation \\
+    \textbf{Kernel Instances} & Isolated Guest Kernel per VM & Shared Host Kernel \\
+    \textbf{Memory Allocation} & Statically Partitioned / Pre-allocated & Dynamically Allocated via Host \\
+    \textbf{Storage I/O Overhead} & Block-level Emulation / Virtual Disk & UnionFS / Native Bind Mounts \\
+    \textbf{Typical Boot Time} & Seconds to Minutes (\SIrange{10}{60}{\second}) & Milliseconds (\SIrange{50}{200}{\milli\second}) \\
+    \bottomrule
+    \multicolumn{3}{@{}>{\scriptsize}p{\dimexpr\textwidth\relax}@{}}{Cycle and latency figures are representative order-of-magnitude values; \cite{felter2015performance} provides an application-level container-versus-VM performance comparison.}
+    \end{tabularx}
+\end{table}
+
+\subsection{Hardware Virtualization (Hypervisors)}
+Hardware virtualization, managed by a Hypervisor (Type 1 running directly on bare metal, or Type 2 running on a host OS), creates fully isolated Virtual Machines (VMs).
+The guest operating system executes instruction streams within a deprivileged processor execution mode (e.g., Intel VMX non-root operation). Non-virtualizable sensitive instructions trigger a \textit{VM-exit} event, forcing a context switch back to the host hypervisor for software emulation. 
+
+On macOS, the native kernel virtualization is exposed via the low-level \texttt{Hypervisor.framework} (which provides APIs for direct interaction with CPU virtualization features like VT-x/Intel VMX or Apple Silicon ARMv8 virtualization extensions) and the higher-level \texttt{Virtualization.framework} (which abstracts the bootloaders, virtual devices, and VM configuration). On Apple Silicon hosts, virtualization introduces unique scheduling dynamics. The host OS must map guest vCPU threads onto the physical asymmetrical cores: high-frequency Performance (P) cores and energy-efficient Efficiency (E) cores. The macOS thread scheduler manages these guest vCPU threads dynamically, but CPU pinning (affinity) is not natively supported by the framework. If guest threads are scheduled onto E-cores during intensive FPGA compilation, performance degrades significantly. Additionally, VM-exit penalties on ARM64 are caused by hypervisor traps for virtual timer access, interrupt handling, or generic stage-2 translation faults. While hardware-assisted translation (Two-Level Address Translation or Stage 2 Translation in ARMv8) reduces MMU translation latency by caching Guest Physical to Host Physical mappings in the TLB, TLB misses require walking two independent sets of page tables, incurring a measurable performance tax on translation-heavy workloads compared to native execution.
+
+Memory management in VMs introduces significant overhead due to Second Level Address Translation (SLAT), implemented as Extended Page Tables (EPT) on Intel CPUs or Nested Page Tables (NPT) on AMD CPUs. When the guest OS translates a guest virtual address to a guest physical address, the MMU must walk the two-dimensional guest-to-host page tables. This can double the page table walk latency in the worst-case cache-miss scenarios. Storage \text{I/O} similarly suffers from an emulation tax, where block device requests pass through multiple layers of virtualized queue adapters before reaching host storage. These factors result in a high resource overhead and make hypervisors unsuitable for the rapid, low-latency, iterative compile-and-run cycles required by modern Integrated Development Environments (IDEs).
+
+\subsection{Operating System-level Virtualization (Containers)}
+OS-level virtualization creates isolated user-space instances (containers) that share the host operating system's kernel. Rather than emulating hardware, it relies on host kernel features to partition resources, allowing processes inside the container to execute at native hardware speeds. System calls pass directly to the host kernel with normal kernel trap latencies, avoiding the VM-exit penalty. 
+
+For EDA toolchains, OS-level virtualization enables the concept of \textit{Hermetic Builds}: environments that are completely self-contained and reproducible across developer machines. By locking the exact tool versions and system shared library hashes within an immutable container image, the container-based approach mitigates environmental divergence without incurring detrimental performance latency.
+
+\subsection{Open Container Initiative (OCI) Standards}
+To prevent vendor lock-in and ensure interoperability, modern containerization is governed by the Open Container Initiative (OCI) standards. The OCI Image Specification establishes a strict, content-addressable design~\cite{oci2017image}. An image is structured as a collection of tar files representing filesystem layers, coupled with a JSON manifest and a JSON configuration file.
+Content Addressability is achieved using cryptographic hashing (SHA-256). Every layer tarball, configuration file, and manifest is stored and indexed by its hash value. This allows the container engine to verify image integrity and reuse existing layers across different images, saving storage space and download bandwidth.
+The image manifest---itself a content-addressed JSON blob rather than a fixed filename---links these components together by listing the digests of the filesystem layers and the image configuration. The configuration file specifies execution metadata (environment variables, entrypoints, user accounts, and CPU architecture).
+During runtime instantiation, the engine (e.g., \texttt{containerd}) downloads and verifies these layers. It then stacks them using a union filesystem like OverlayFS, presenting a unified read-only directory structure (the rootfs) to the runtime execution tool (e.g., \texttt{runc}).
+
+The OCI Runtime Specification governs the execution environment~\cite{oci2017runtime}. The engine creates an isolated container environment using host kernel namespaces and cgroups as configured in the runtime's configuration file (\texttt{config.json}). The runtime defines standard lifecycle operations:
+\begin{enumerate}
+    \item \textbf{create:} The container environment is created, namespaces are set up, and the init process is suspended before executing the entrypoint.
+    \item \textbf{start:} The suspended process is resumed, starting the target program.
+    \item \textbf{kill:} Sends a signal to the container processes.
+    \item \textbf{delete:} Cleans up the namespaces and resource limits.
+\end{enumerate}
+The standardized OCI APIs allow container engines (such as Docker, Podman, or containerd) to swap underlying runtimes transparently, facilitating consistent execution environments across Linux, Windows, and macOS hosts.
+
+\section{The Docker Container Engine}
+Docker is the de-facto standard implementation of OS-level virtualization. It operates as a daemon (\texttt{dockerd}) that exposes a RESTful socket API to manage images, networks, volumes, and containers. The underlying container execution is driven by low-level kernel primitives, ensuring that containers run isolated processes with native scheduling and negligible hardware abstraction overhead.
+
+\subsection{Kernel Namespaces}
+Namespaces provide process-level resource isolation, partitioning the kernel resources so that a group of processes sees one set of resources while another group sees another.
+\begin{enumerate}
+    \item \textbf{PID Namespace:} Virtualizes process IDs, meaning the first process spawned inside the container becomes PID 1. This prevents containerized processes from viewing or signaling processes on the host or other containers.
+    \item \textbf{Mount Namespace (mnt):} Isolates filesystem mount points. The container sees a custom directory layout with its own root directory (\texttt{/}) independent of the host. Crucially, mount propagation flags control how mounts inside or outside the namespace affect each other:
+    \begin{itemize}
+        \item \textbf{shared:} Mounts propagate in both directions. A mount inside the container propagates to the host, and vice versa.
+        \item \textbf{slave:} Mounts propagate only from the host to the container. If the host mounts a new volume under a shared mount, the container sees it, but mounts created inside the container do not reflect back on the host.
+        \item \textbf{private:} Mounts do not propagate in either direction. The containerized mount environment is completely decoupled from the host.
+        \item \textbf{rprivate/rshared/rslave:} Recursive versions of the above flags, which apply the propagation properties to all sub-mounts within the directory tree. Docker bind mounts default to \texttt{rprivate} (recursive-private, no propagation in either direction). Correct propagation settings are critical for mounting active design workspaces, preventing host-level modifications from breaking container compiler contexts.
+    \end{itemize}
+    \item \textbf{User Namespace (user):} Maps user and group IDs (UID/GID) inside the container to a different set of IDs on the host. This is a critical security feature: a process running as root (UID~0) inside the container can be mapped to an unprivileged user (e.g., UID~10001) on the host, preventing host takeover if a container breakout occurs.
+    
+    In modern rootless container architectures, user namespaces enable unprivileged users to create and run containers safely without requiring root access on the host operating system~\cite{Lin2018ContainerSecurity}. When an unprivileged user starts a rootless container, the container engine uses helper binaries like \texttt{newuidmap} and \texttt{newgidmap} to consult the host's configuration files, namely \texttt{/etc/subuid} and \texttt{/etc/subgid}. These files define ranges of subordinate user and group IDs allocated to the host user. The engine maps the container's internal root user (UID~0) to the host user's actual UID (e.g., UID~1000), while mapping internal UIDs $1$ to \num{65536} to the allocated range of subordinate UIDs on the host (e.g., UIDs~\num{100000} to \num{165535}). Thus, while the containerized process runs with root privileges (such as \texttt{CAP\_SYS\_ADMIN} or \texttt{CAP\_NET\_ADMIN}) within its own isolated namespace, it possesses only the unprivileged host user's permissions on the host system, mitigating privilege escalation attacks.
+    
+    The relevant consequence for this thesis is qualitative. Because container-internal IDs are translated to host IDs through these mapping ranges, a process that is root inside the namespace holds only the unprivileged host user's permissions outside it, so a container escape yields no host privilege. This is what makes the extension's host UID/GID injection meaningful---artifacts written by the containerized toolchain are owned by the invoking developer rather than by \texttt{root}---and is revisited as a design property in Chapter~\ref{ch:concept}. The detailed range-mapping algebra enforced by \texttt{newuidmap}/\texttt{newgidmap} is part of the container runtime, not of this work.
+    
+    \item \textbf{Network (net) and IPC Namespaces:} Isolate network interfaces, routing tables, and Inter-Process Communication channels (such as shared memory segments and semaphores), ensuring network and socket containment.
+\end{enumerate}
+
+\subsection{System Call Filtering (Seccomp)}
+Beyond namespaces, container runtimes apply a default \emph{seccomp} (secure computing) profile that restricts which system calls a containerized process may issue, blocking administrative calls such as those that change system time, load kernel modules, or manipulate namespaces. This is a property of the runtime's default configuration rather than something the extension programs itself: the extension relies on the runtime defaults and, at container creation, additionally drops all Linux capabilities and sets \texttt{no-new-privileges} (Chapter~\ref{ch:concept}). A detailed treatment of the seccomp-BPF filter internals is outside the scope of this thesis.
+
+\subsection{Rootless Networking and TCP/IP Acceleration}
+While rootless containers significantly harden the security boundary, isolating the network namespace without administrative privileges introduces severe network performance bottlenecks. Because an unprivileged user cannot create kernel-level virtual ethernet (\texttt{veth}) interfaces or configure host-level routing tables, rootless container engines traditionally rely on user-space network translation utilities like \texttt{slirp4netns}. Under this scheme, every TCP/IP packet generated inside the container's network namespace must be copied from kernel space into user space, translated by the \texttt{slirp4netns} daemon, and then reinjected back into the host's network stack via unprivileged socket API calls. This constant context-switching and user-space packet copying inflicts substantial CPU overhead and reduces network throughput, which can severely slow down operations such as pulling multi-gigabyte compiler images or contacting license servers.
+
+To accelerate communication in unprivileged environments, Matsumoto and Suda proposed \texttt{bypass4netns}~\cite{Matsumoto2024bypass4netns}. This technique intercepts socket-related system calls (e.g., \texttt{socket}, \texttt{connect}, \texttt{bind}) made by the containerized process using the Linux secure computing (seccomp) facility with Berkeley Packet Filter (BPF) filters. When a socket call is intercepted, the seccomp filter pauses the container process and notifies a tracer daemon running in the host's native network namespace. The tracer daemon instantiates a native socket directly on the host and issues the \texttt{SECCOMP\_IOCTL\_NOTIF\_ADDFD} \texttt{ioctl} operation on the seccomp notification file descriptor to inject the corresponding file descriptor back into the containerized process's file descriptor table. This allows network traffic to bypass the unprivileged network namespace and flow directly through the host's high-performance kernel TCP/IP stack. Empirical evaluations of \texttt{bypass4netns} demonstrate over a \qty{30}{\times} increase in TCP throughput, significantly improving sustained bandwidth. However, this seccomp BPF interception path introduces a user-kernel-user context-switch latency tax. Every \texttt{socket()}, \texttt{bind()}, and \texttt{connect()} system call requires trapping to the kernel, notifying the host tracer daemon in user space, injecting the file descriptor, and returning. Consequently, while sustained streaming throughput is greatly improved, connection-setup latency is degraded. For EDA toolchains that execute rapid, short-lived network queries (e.g., license server heartbeats or polling), this seccomp redirection overhead can introduce noticeable latency penalties compared to native execution.
+
+
+\subsection{Control Groups (cgroups)}
+While namespaces isolate process views, Control Groups (cgroups) manage, meter, and limit the physical resources consumed by those processes. The Linux kernel has transitioned from cgroups v1 to cgroups v2, which introduces a unified resource hierarchy.
+Under cgroups v1, controllers were completely independent. A process could belong to one group for memory constraints and a different group for CPU throttling. This led to complex synchronization issues and high kernel management overhead. A critical issue in cgroups v1 was the inability to coordinate memory and Block \text{I/O} controllers for buffered \text{I/O} writebacks. The kernel's page cache writeback daemon (which runs as a background process) could not determine which cgroup owned a dirty page. As a result, writeback \text{I/O} throttling could not be applied correctly to the process that wrote the data, allowing containers to bypass configured \text{I/O} limits. Furthermore, cgroups v1 allowed individual threads of a single process to be placed in different cgroups, complicating resource allocation and tracking.
+
+Cgroups v2 establishes a single unified tree structure where every resource controller (CPU, memory, \text{I/O}, PID count) is attached to a single group hierarchy:
+\begin{itemize}
+    \item \textbf{Single-Hierarchy Rule:} A process can only reside in a single cgroup node. All controllers apply to the same process group, enabling cleaner resource management and cross-resource controllers (such as the Out-of-Memory (OOM) killer terminating an entire container group rather than a single random leaf process).
+    \item \textbf{Process-Granularity:} Resource allocation is restricted to the process level. All threads of a process must belong to the same cgroup, preventing thread grouping inconsistencies.
+    \item \textbf{Unified Writeback Tracking:} The memory and \text{I/O} controllers cooperate, allowing the kernel to correctly attribute buffered \text{I/O} writebacks to the responsible cgroup and apply disk \text{I/O} limits.
+    \item \textbf{Improved Resource Control Files:} Controllers use unified control files: \texttt{memory.max} (hard limit, triggers OOM killer when exceeded), \texttt{memory.high} (throttle limit, slows down memory allocation when exceeded to avoid hard OOM exits), \texttt{cpu.max} (defines the CPU quota, e.g., \texttt{100000\ 100000} for 1 core or \texttt{400000\ 100000} for 4 cores), and \texttt{cpu.weight} (replaces v1's CPU shares, using a standardized scale of \numrange{1}{10000}).
+\end{itemize}
+Integrating resource constraints ensures that intensive synthesis operations do not consume all host resources, which would freeze the developer's workstation or IDE interface.
+
+\subsection{Union File Systems (OverlayFS)}
+Docker images are constructed from read-only layers stacked using a Union File System (typically OverlayFS).
+OverlayFS merges two directories on a single host into a unified view. The bottom directory (\textit{lowerdir}) represents the immutable base image layer, while the top directory (\textit{upperdir}) contains the writable container layer. When a container writes to a file that exists in the base image, OverlayFS performs a \textit{Copy-on-Write} (CoW) operation: it copies the file from the read-only lower directory to the writable upper directory before executing the write.
+This mechanism guarantees:
+\begin{itemize}
+    \item \textbf{Efficiency:} Read-only layers are shared among all running container instances, saving disk space and memory cache.
+    \item \textbf{Reproducibility:} The base layers remain untouched, ensuring that every time a design tool compiles, it starts from a clean, identical filesystem state.
+\end{itemize}
+
+\subsection{Container Image Layer Caching and Layer Retrieval Protocols}
+To minimize network overhead and startup latency, container engines employ sophisticated layer caching and retrieval protocols governed by the OCI Distribution Specification. An image layer is a compressed tarball identified by its cryptographic SHA-256 digest, which enforces content-addressable storage (CAS).
+
+When a container engine is instructed to retrieve an image (e.g., via the Docker Engine API), it performs a multi-step negotiation protocol with the registry:
+\begin{enumerate}
+    \item \textbf{Manifest Retrieval:} The client requests the image manifest by its repository and reference (tag or digest). The registry returns a JSON document specifying the schema version, config digest, and an ordered list of layer descriptors containing their media types, digests, and byte sizes.
+    \item \textbf{Existence Check (Blob Probing):} The client probes its local content store to determine which layer digests are already present. This constitutes the local cache layer lookup. For layers already present, the client skips downloading entirely, achieving $O(1)$ cache hit resolution.
+    \item \textbf{Parallel Layer Fetching:} For cache misses, the client initiates concurrent HTTP GET requests to the registry's blob endpoint (\texttt{/v2/<name>/blobs/<digest>}). To optimize network throughput, layers are downloaded in parallel.
+    \item \textbf{Decompression and Stacking:} Downloaded tarballs are verified against their SHA-256 digests, decompressed, and registered in the local graph driver (e.g., OverlayFS).
+\end{enumerate}
+
+In the context of EDA toolchains, where toolchain image sizes can range from \SIrange{2}{15}{\giga\byte} due to extensive commercial compilers and libraries, efficient layer reuse is critical. By structuring Dockerfiles with stable system dependencies (e.g., base compiler libraries, glibc, Python runtimes) at the bottom and frequently changing plugin configurations or script templates at the top, developers can maximize layer sharing. Under this configuration, when a user switches between different tool versions (e.g., Yosys v0.38 to v0.39), only the thin top layer representing the tool binary is downloaded, while the massive base dependency layers remain cached locally.
+
+\section{System Heterogeneity in EDA}
+EDA toolchains present extreme OS and architecture heterogeneity, complicating deployment in cross-platform environments.
+
+\subsection{Instruction Set Architectures (ISA) and Binary Translation}
+Most legacy and commercial FPGA synthesis and layout tools are compiled exclusively for the \textbf{x86\_64} (AMD64) architecture. However, contemporary development hardware is shifting toward ARM64, as seen with Apple Silicon and ARM-based Windows platforms. Running x86\_64 binaries on ARM64 hosts requires dynamic or ahead-of-time binary translation~\cite{altinay2020survey}.
+
+A core challenge in cross-architecture binary translation lies in bridging divergent hardware Memory Consistency Models (MCM). Memory consistency models dictate the rules for how memory writes from one CPU core become visible to other cores. The x86 architecture enforces a strong memory consistency model known as Total Store Ordering (TSO), which guarantees that memory writes become globally visible in program order; only the store-to-load order is relaxed by store buffering. Software developers and compilers targeting x86 rely on TSO to synchronize multi-threaded processes without injecting explicit hardware memory barriers. Conversely, ARM64 and RISC-V employ a Weak Memory Ordering (WMO) model, allowing aggressive hardware instruction reordering to maximize pipeline efficiency. When executing an x86 binary on a WMO host like ARM64, standard dynamic binary translation (DBT) engines (such as QEMU) must inject expensive software memory barriers (\texttt{DMB} or \texttt{DSB}) after memory operations to simulate TSO constraints, which serializes execution and can degrade multi-threaded performance substantially~\cite{Gouicem2023Risotto, Gao2024CrossMapping, Reimers2026Arancini}.
+
+On macOS, Apple implements \textbf{Rosetta 2}~\cite{apple2020rosetta}, which translates x86\_64 instructions into equivalent ARM64 instruction sequences. Rosetta 2 compiles x86\_64 user-space binaries during their initial load (Ahead-of-Time translation) and caches the resulting ARM64 code on disk. If dynamic instruction translation is needed (such as JIT compilation), Rosetta 2 performs Just-in-Time compilation at runtime. Rosetta 2 leverages custom hardware extensions in Apple CPUs, such as a hardware-level switch that enables TSO memory consistency directly on the ARM cores, which matches the x86 memory model and avoids expensive memory fence emulations~\cite{Wrenger2024AppleM1}. Despite these hardware optimizations, binary translation imposes a performance cost, referred to hereafter as the binary translation overhead. This overhead is caused by instruction expansion (ARM64 instructions are fixed-width and simpler than complex x86 instructions), page table alignment translation (macOS defaults to \SI{16}{\kilo\byte} pages while Linux/x86\_64 expects \SI{4}{\kilo\byte} pages), and system call mapping overheads.
+
+\subsection{Operating System Interfaces (OSI) and Virtualization Environments}
+Because Docker relies on Linux kernel primitives (namespaces, cgroups), running containers on macOS or Windows requires a virtualized Linux kernel. This kernel runs inside a lightweight VM managed by hypervisor frameworks:
+\begin{itemize}
+    \item \textbf{macOS (OrbStack or Docker Desktop):} Uses macOS's native \texttt{Hypervisor.framework} to boot a minimal Linux kernel in a deprivileged VM.
+    \item \textbf{Windows (WSL2):} Uses the Hyper-V hypervisor to run a Microsoft-optimized Linux utility VM.
+\end{itemize}
+In these virtualized setups, accessing host files from within the container requires a network- or filesystem-level sharing bridge, which has significant performance implications~\cite{dockerio}. The performance of these bridges is a critical bottleneck for \text{I/O}-intensive EDA tasks like compiling thousands of VHDL/Verilog source files:
+\begin{itemize}
+    \item \textbf{9pfs Protocol:} Early hypervisor implementations utilized the 9pfs (Plan 9 Filesystem) protocol to share directories. Because 9pfs acts as a remote network filesystem, every filesystem query requires packet serialization, transmission over a virtual network link, hypervisor context switching, and deserialization. When subjected to the highly parallelized, random small-file access patterns of HDL compilation, 9pfs exhibits catastrophic \text{I/O} operations per second (IOPS) degradation.
+    \item \textbf{gRPC-FUSE:} Transports filesystem requests by translating OS-level VFS (Virtual File System) operations into gRPC messages sent over a virtual socket. This protocol is highly abstract and incurs severe IPC serialization overheads, leading to high latency and low throughput on small file operations. Every metadata check (\texttt{stat}) or read request requires a full user-to-kernel context switch in the guest, serialization, socket transport, and context switch on the host, leading to latency overheads of several milliseconds per file operation.
+    \item \textbf{VirtioFS:} A paravirtualized file sharing protocol designed specifically for virtualization~\cite{russell2008virtio}. It implements a shared-memory region between the guest VM and the host, allowing the VM to bypass socket serialization and access host file metadata and data directly. VirtioFS significantly reduces latency and file attribute caching costs compared to gRPC-FUSE, making it the preferred choice for mounting active design workspaces.
+\end{itemize}
+Furthermore, VirtioFS supports various caching modes (such as \texttt{none}, \texttt{metadata}, and \texttt{always}) to tune consistency and performance. A crucial architectural optimization in VirtioFS is \textbf{Direct Access (DAX)}. In traditional hypervisor file sharing, files are cached twice: once in the host kernel's page cache and once in the guest kernel's page cache, which wastes RAM and CPU cycles during cache sync operations. With DAX support, the host's page cache is mapped directly into the guest VM's physical address space. When a containerized compiler reads a source file, the guest kernel accesses the host's page cache memory directly, bypassing guest-level caching and eliminating double caching overheads.
+
+Despite the DAX optimization, shared directory structures still suffer from metadata traversal latency (e.g., path resolution and permission checking). In high-density serverless and microVM environments, the storage interface design dictates startup concurrency and resource utilization. In runtime environments like RunD \cite{Li2022RunD}, directory-sharing mechanisms are bypassed in favor of a block-level device overlay (\texttt{virtio-blk}) configured via device-mapper. The guest VM mounts an \texttt{ext4} filesystem directly on the block device, eliminating all hypervisor-level metadata traversal during execution. Empirical measurements from RunD show that leveraging \texttt{virtio-blk} along with optimized page cache sharing allows launching over $200$ secure microVM containers per second, accommodating up to $2500$ concurrent instances on a single physical host node with minimal memory usage. Similar container-on-microkernel architectures, such as MettEagle \cite{Miemietz2025MettEagle}, demonstrate that microkernel-isolated container runtimes can achieve near-native performance while restricting the host kernel attack surface.
+
+However, this block-level overlay approach exposes a critical system concurrency limitation. Because standard filesystems like \texttt{ext4} are not cluster-aware (unlike clustered filesystems such as OCFS2), a raw block device cannot be concurrently mounted read/write by both the host IDE and the guest VM without immediate and catastrophic metadata corruption. Thus, while \texttt{virtio-blk} overlays are highly effective in isolated, read-only serverless worker nodes, they are unusable for interactive IDE environments where the developer on the host must dynamically write and read the workspace files. For these mixed-read/write environments, paravirtualized shared filesystems such as VirtioFS, or network filesystems such as 9pfs, remain systemically mandatory to coordinate concurrent file locking and maintain cache consistency.
+
+\section{Comparative Analysis of Container Sandboxing Runtimes}
+For secure execution of untrusted EDA code, the runtime sandbox choice determines the kernel attack surface. This section compares three runtime solutions:
+\begin{enumerate}
+    \item \textbf{runc:} The default OCI reference runtime written in Go. It executes container processes directly as child processes of the host kernel namespaces. It provides native execution speed with zero virtualization overhead but shares the host kernel interface. If a containerized synthesis tool exploits a kernel system call vulnerability, it can break out to the host.
+    \item \textbf{crun:} A fast, low-memory OCI runtime written in C. It performs identical namespace isolation as runc but has lower startup latency (on the order of single-digit versus tens of milliseconds). However, it shares the same host kernel attack surface.
+    \item \textbf{gVisor:} A secure sandbox runtime developed by Google that implements a user-space kernel (called the ``Sentry'') written in Go. The Sentry intercepts all system calls made by the container and handles them in user space, exposing only a tiny, hardened subset of system calls to the host kernel; filesystem access outside the sandbox is delegated to a separate file-proxy process (the ``Gofer''). While gVisor dramatically reduces host kernel exploit vulnerability, it imposes a high system-call translation tax (several-fold slower on I/O-intensive builds), making it unsuitable for high-throughput FPGA synthesis.
+\end{enumerate}
+
+\section{Modern FPGA Design Flows}
+The FPGA compilation process, leading to ``Bitstream Generation,'' is a multi-stage pipeline where each stage depends on distinct, highly specialized command-line tools. Maintaining this pipeline is difficult due to complex dependency chains and libraries.
+
+\subsection{Synthesis and HDL Processing (Yosys/GHDL)}
+Synthesis is the process of translating high-level Hardware Description Languages (VHDL\slash Verilog) into a structural netlist of technology-mapped logic gates:
+\begin{itemize}
+    \item \textbf{GHDL:} GHDL is an open-source simulator that executes VHDL designs directly \cite{gingold2005ghdl}. It is built against one of three code-generation backends (the built-in mcode JIT, LLVM, or GCC); the LLVM and GCC builds are tightly coupled to host compiler toolchains.
+    \item \textbf{Yosys:} A framework for Verilog RTL synthesis. For VHDL synthesis, Yosys relies on GHDL integrations (e.g., via the \texttt{ghdl-yosys-plugin}).
+\end{itemize}
+These tools depend on specific versions of shared libraries like \texttt{libboost\_system}, \texttt{libboost\_thread}, and exact glibc runtimes. Divergent shared library dependencies frequently precipitate severe dependency resolution cascades.
+
+\subsection{Place and Route (nextpnr)}
+Place and Route (P\&R) maps the synthesized netlist onto the physical logic blocks, routing resources, and I/O pins of a target FPGA architecture. This stage is highly computational. nextpnr links against specific versions of the Boost C++ shared libraries (e.g., \texttt{libboost\_program\_options}, \texttt{libboost\_iostreams}, \texttt{libboost\_thread}). If the host system updates its package manager (e.g., via macOS Homebrew or Windows Chocolatey), the installed Boost version may upgrade from v1.82 to v1.85. This causes nextpnr to fail with a dynamic linker error (\texttt{dyld: Library not loaded}), a classic example of package drift breaking toolchain execution.
+
+\subsection{Hardware Programming (openFPGALoader)}
+Once the bitstream is generated, it must be loaded onto the physical FPGA hardware. This is performed using utility software like \texttt{openFPGALoader} or \texttt{iceprog}, which interact with host USB-to-UART/FIFO controllers (typically FTDI chips). These utilities depend on low-level USB drivers like \texttt{libusb} and \texttt{libftdi}. Containerizing these tools requires not only runtime isolation but also raw host USB device path forwarding into the guest VM space, which complicates virtualized environments.
+
+\clearpage
+\section{The Docker Engine API}
+The Docker daemon exposes its functionality via a structured, versioned RESTful HTTP API, typically accessed through a local IPC channel. This interface allows external programs, such as OneWare Studio, to manage the container lifecycle programmatically.
+
+\subsection{IPC Transport Mechanisms}
+Depending on the host operating system, the API client must resolve and establish a socket connection. Windows Named Pipes and Unix Domain Sockets are standard local IPC mechanisms~\cite{stevens2013advanced}:
+\begin{itemize}
+    \item \textbf{Unix Domain Sockets (UDS):} On macOS and Linux, the standard communication channel is a local IPC socket located at \texttt{/var/run/docker.sock}. Sockets are lightweight and do not cross the TCP/IP stack, avoiding network overhead. They use standard file-like descriptor operations (\texttt{socket(AF\_UNIX, SOCK\_STREAM)}).
+    \item \textbf{Named Pipes:} On Windows hosts, the API is exposed via a Named Pipe at the path \texttt{\textbackslash\textbackslash.\textbackslash pipe\textbackslash docker\_engine}. Named Pipes are part of the Windows NT kernel namespace and support asynchronous \text{I/O} and security descriptor configurations.
+\end{itemize}
+
+\clearpage
+\subsection{API Protocol Operations}
+Communication over the HTTP stream consists of JSON payloads for container creation and raw TCP connections upgraded to hijacked stdin/stdout streams for interactive execution. The client translates high-level task requests into the corresponding JSON payloads.
+
+\clearpage
+\subsection{Core Docker API Endpoints}
+The middleware orchestrates containers using four core REST endpoints from the Docker API~\cite{dockerapi}:
+\begin{enumerate}
+    \item \textbf{Create Container (\texttt{POST /containers/create}):} Sends a JSON payload defining the configuration (image, entrypoint, environment variables, volumes, and cgroup limits). The daemon returns a JSON payload containing the container's unique 64-character hexadecimal ID.
+    \item \textbf{Attach to Streams (\texttt{POST /containers/[id]/attach}):} Establishes a persistent, raw TCP/pipe connection to stream standard output and standard error. The daemon multiplexes stdout and stderr over this stream using an 8-byte frame header (detailed in Chapter~\ref{ch:implementation}).
+    \item \textbf{Start Container (\texttt{POST /containers/[id]/start}):} Instantiates the container: creates its namespaces, mounts the UnionFS filesystem layers, and executes the entrypoint.
+    \item \textbf{Wait Container (\texttt{POST /containers/[id]/wait}):} A blocking call that returns a JSON response containing the container process's final exit code when execution terminates.
+\end{enumerate}
+
+This programmatic interface ensures that the IDE can monitor build progress, capture exit codes, and process stdout/stderr streams with low latency, without resorting to sub-process spawning of command-line tools.
+
+\section{Software Architecture Patterns}
+Integrating containerized toolchains into a modern IDE without sacrificing modularity requires applying robust software architecture patterns that govern enterprise application structures~\cite{fowler2002}. The OneWare Container Extension leverages three main patterns:
+
+\subsection{The Strategy Pattern}
+The Strategy Pattern defines a family of algorithms, encapsulates each one, and makes them interchangeable. In this implementation, the strategy represents the execution engine. By defining the \texttt{IToolExecutionStrategy} interface, the IDE decouples the compiler modules (which generate synthesis or simulation commands) from the physical execution layer (which runs those commands). The compiler is unaware of whether a command is executed natively on the host shell or inside a container sandbox. This design allows for runtime flexibility, enabling the IDE to dynamically switch strategies based on daemon availability and user settings.
+
+\subsection{The Adapter Pattern}
+The Adapter Pattern converts the interface of a class into another interface clients expect. OneWare Studio's core expects standard OS processes (\texttt{System.Diagnostics.Process}) to monitor execution, manage cancellation tokens, and read streams. However, container execution is carried out asynchronously via HTTP requests over a Unix socket or Named Pipe. To bridge this gap, the middleware implements the Adapter Pattern in \texttt{StartWeakProcess}. It wraps the container's socket connection inside a dummy OS process handle, translating native process operations (such as \texttt{Kill()}) into Docker API lifecycle calls---a graceful \texttt{POST /containers/[id]/stop} with a short kill-timeout, followed by a \texttt{DELETE /containers/[id]} teardown---ensuring compatibility with existing IDE code.
+
+\subsection{Dependency Injection}
+To achieve loose coupling, the architecture utilizes Dependency Injection (DI) to manage service lifetimes and configuration settings. Services such as \texttt{DockerExecutionStrategy} and the diagnostics view model are registered as Singletons within the application's dependency container, and the host-provided \texttt{ISettingsService} is consumed as a singleton; the telemetry component is a process-wide static utility (a JSON Lines writer) rather than a DI-registered service. This ensures that a single instance coordinates container lifecycle operations and prevents socket exhaustion, while configuration changes propagate dynamically to all dependent modules.
+
+

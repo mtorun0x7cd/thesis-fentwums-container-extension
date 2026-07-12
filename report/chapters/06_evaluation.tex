@@ -1,0 +1,410 @@
+% =============================================================================
+% Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in
+% all copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+% =============================================================================
+
+\chapter{Evaluation}
+\label{ch:evaluation}
+
+This chapter presents the empirical results of the thesis. It validates the architectural claims regarding Cross-Platform Compatibility (RQ1) and Performance Viability (RQ3) through quantitative benchmarking and qualitative failure analysis.
+
+\section{Data Status and Threats to Validity}
+\label{sec:data_status}
+The measurements reported in this chapter are complete for all three machines: Machine~1 (Apple Silicon), Machine~2 (Linux \texttt{x86\_64}), and Machine~3 (Windows \texttt{x86\_64}). Three properties of the data bound its interpretation and are stated here up front.
+
+First, the macOS arm is \emph{emulation-confounded}. The reference toolchain image is published \texttt{linux/amd64} only, so on the ARM64 host it executes under the runtime's Rosetta~2 translation layer, whereas the native baseline is ARM64. A macOS native-versus-container comparison therefore measures containerization \emph{and} instruction-set emulation together; any resulting overhead factor would be only an \emph{upper bound} for the emulated case and would not isolate the cost of the integration layer, so no native baseline is captured on this host. Machine~3 removes this confound for the marginal-cost axis: it runs the same \texttt{linux/amd64} image natively under WSL2, without Rosetta translation, and its extension-overhead figures (Section~\ref{subsec:overhead_windows}) confirm the macOS finding on un-emulated hardware.
+
+Second, a valid native-versus-container factor---the continuous multiplier $\alpha$ of Section~\ref{subsec:overhead_analysis}---is isolable on \emph{only one} of the three hosts, and that measurement was performed on Machine~2. It requires a host on which the native toolchain and the containerized toolchain are the \emph{same} build. Machine~1 cannot provide it, because its native baseline would be ARM64 while the container is emulated \texttt{amd64}. Machine~3 cannot either, for a different reason established empirically here: the native Windows \texttt{oss-cad-suite} release is a MinGW/GCC Windows build, whereas the container carries the Clang/Linux build of the identical source and commit, so a version-parity gate (Section~\ref{subsec:native_baseline}) correctly rejected the Windows native-versus-container comparison. The Linux \texttt{x86\_64} host (Machine~2), whose native package \emph{is} the same Clang/Linux build shipped in the image, satisfies the gate and yields the $\alpha$ baseline reported in Section~\ref{subsec:overhead_linux}.
+
+Third, output determinism is assessed \emph{across} all three platforms. With Machines~1, 2, and~3 present, the per-artifact SHA-256 comparison is a genuine cross-machine, cross-architecture (one ARM64-hosted versus two \texttt{x86\_64}-hosted executions) test rather than the single-platform, informational check it was before; the result is reported in Section~\ref{subsec:determinism_results}. On the two hosts without a same-build native baseline (Machines~1 and~3) the cleanly attributable timing quantity remains the \emph{marginal} cost the extension adds beyond raw containerization---the strategy-versus-CLI difference---while Machine~2 additionally yields the container-versus-native factor.
+
+\section{Experimental Setup}
+To ensure the reproducibility of the results, the evaluation was conducted on a standardized hardware testbed representing a typical high-end developer environment.
+
+\subsection{Hardware Testbed Configuration}
+To validate the performance characteristics of the containerized execution environment across different operating systems and CPU architectures, three separate evaluation machines were configured: one Apple Silicon (ARM64) host and two \texttt{x86\_64} hosts running Linux and Windows respectively. All three machines have been measured; Machine~2 (Linux \texttt{x86\_64}) is the native-baseline ($\alpha$) testbed identified in Section~\ref{sec:data_status}, the only host that admits a same-build native comparison.
+
+\textbf{Machine 1 (macOS Host - Apple Silicon):}
+\begin{itemize}
+    \item \textbf{Device:} Apple MacBook Pro (16-inch, 2024)
+    \item \textbf{SoC:} Apple M4 Max (16-Core CPU: 12 Performance Cores, 4 Efficiency Cores; 40-Core GPU)
+    \item \textbf{Memory:} \SI{128}{\giga\byte} Unified Memory
+    \item \textbf{OS:} macOS Tahoe 26.6 (Darwin 25.6.0)
+    \item \textbf{Container Runtime:} OrbStack (Docker Engine v29.4.0) with Rosetta 2 translation layer enabled
+    \item \textbf{Toolchain:} .NET SDK 10.0.301, Python 3.9.6
+\end{itemize}
+
+\textbf{Machine 2 (Linux Host - x86\_64):}
+\begin{itemize}
+    \item \textbf{CPU:} Intel Core Ultra~9 285H (Arrow Lake; 6~Performance + 8~Efficiency + 2~Low-Power-Efficiency cores, 16~cores / 16~threads)
+    \item \textbf{Memory:} \SI{64}{\giga\byte}
+    \item \textbf{OS:} Ubuntu~26.04 LTS (kernel 7.0.0-15-generic, \texttt{performance} CPU governor)
+    \item \textbf{Container Runtime:} Docker Engine v29.1.3 (native Linux containers, \texttt{overlayfs} storage driver, \texttt{x86\_64}; no emulation or WSL layer)
+    \item \textbf{Toolchain:} .NET SDK 10.0.301, Python 3.11.6
+\end{itemize}
+
+\textbf{Machine 3 (Windows Host - x86\_64):}
+\begin{itemize}
+    \item \textbf{CPU:} Intel Core Ultra~7 155H (Meteor Lake; 6~Performance + 8~Efficiency + 2~Low-Power-Efficiency cores, 16~cores / 22~threads)
+    \item \textbf{Memory:} \SI{32}{\giga\byte}
+    \item \textbf{OS:} Windows~11 (build 26200)
+    \item \textbf{Container Runtime:} Docker Desktop v29.6.1 (Linux containers, WSL2 backend, \texttt{x86\_64})
+    \item \textbf{Toolchain:} .NET SDK 10.0.301, Python 3.12.10
+\end{itemize}
+The host, CPU, memory, and runtime figures for Machines~2 and~3 are those captured programmatically at run time (\texttt{machine.json}); on both \texttt{x86\_64} hosts the container image executes natively with no instruction-set translation.
+
+\section{Methodology}
+The performance overhead was measured with a purpose-built benchmarking harness, \texttt{Container\-Benchmark\-Harness} (\texttt{src/ContainerBenchmarkHarness/Program.cs}), driven by a Python orchestration layer (\texttt{benchmark.py}, \texttt{run\_evaluation.py}). The harness does not approximate the extension; it constructs a real \texttt{DockerExecutionStrategy} and invokes the same \texttt{ExecuteAsync} code path that OneWare~Studio uses in production, including image resolution, container lifecycle management and stream demultiplexing. Timing, statistics and result serialization are performed in Python, so a single measurement protocol applies uniformly to every execution backend.
+
+\subsection{Harness Build and Timing Model}
+The harness is a standard .NET Release build executed under the Just-In-Time (JIT) compiler. Its code paths are reflection-free and therefore Native-AOT compatible---the project sets the AOT-analysis suppression properties---but it is not AOT-published in this evaluation; the reported figures are produced by the JIT build. JIT warm-up and any first-run container setup are excluded from the measurement by an unrecorded warm-up phase (below), and per-iteration timing is captured on the Python side with \texttt{time.perf\_counter()} around each invocation, so the recorded interval is the end-to-end wall-clock cost of the dispatch as observed by the caller. This timer is used identically for all backends, which makes the cross-backend deltas---the quantity of interest---independent of any .NET-internal clock.
+
+\subsection{Environmental Control and Hardware Isolation}
+To guarantee the validity and reproducibility of the performance metrics, strict environmental controls were applied to the hardware testbeds during benchmarking:
+\begin{itemize}
+    \item \textbf{Process Isolation:} All user-space background processes (e.g., development environments, communication clients, web browsers) were terminated on the host systems to eliminate CPU scheduling conflicts and context-switching interference.
+    \item \textbf{Power State Configuration:} The testbed machine was connected to a dedicated external AC power source, and the operating system power manager was configured to a high-performance profile. This prevents the OS from dynamically scaling CPU clock frequencies or entering low-power states during execution, which would skew the timing.
+    \item \textbf{Thermal Stability:} No artificial cool-down was inserted between iterations. The per-iteration container lifecycle (teardown and re-creation between invocations) provides natural spacing, and thermal throttling (where the hardware dynamically decreases the CPU frequency to protect from heat buildup) would surface under the CV-adaptive repetition protocol as elevated variance, which the reported CVs do not show.
+    \item \textbf{Asymmetrical Core Scheduling (macOS):} The Apple M4 Max SoC contains an asymmetrical core configuration consisting of 12 Performance (P) cores and 4 Efficiency (E) cores. The macOS thread scheduler manages thread affinity dynamically. To prevent vCPU threads from being scheduled onto the slower E-cores during benchmarking (which would artificially inflate the mean execution time), the system load was verified as idle ($<1\%$) prior to execution, ensuring the XNU scheduler dispatched all benchmark threads to high-frequency P-cores.
+\end{itemize}
+
+\subsection{Execution Backends}
+Each workload is evaluated across three execution backends, selected by \texttt{benchmark.py -{}-backend}:
+\begin{enumerate}
+    \item \textbf{Native.} The tool binary is invoked directly on the host as the reference baseline. This backend is optional (\texttt{run\_evaluation.py -{}-with-native}) and is valid only when the native toolchain is the \emph{same build} as the one inside the image, verified by a version-parity gate before the comparison is admitted (Section~\ref{subsec:native_baseline}). It was not captured on Machine~1 (a macOS native run measures containerization \emph{and} emulation together) and was rejected on Machine~3 (the native Windows \texttt{oss-cad-suite} is a MinGW build, the container a Clang build of the same source); it was admitted on the Linux \texttt{x86\_64} host (Machine~2), whose native package is the same Clang/Linux build as the image, yielding the baseline reported in Section~\ref{subsec:overhead_linux}.
+    \item \textbf{CLI Container (\texttt{cli}).} The workload is wrapped in \texttt{docker run -{}-rm} with the workspace bind-mounted at \texttt{/workspace}. This isolates the cost of containerization itself, independent of the extension.
+    \item \textbf{Strategy (\texttt{strategy}).} The workload runs through the real \texttt{DockerExecutionStrategy}\-\texttt{.ExecuteAsync} path via \texttt{ContainerBenchmarkHarness}---the identical code path shipped in the extension. Telemetry and SDK logging are disabled in the harness so their writes do not run on the measured thread and confound the timing.
+\end{enumerate}
+The load-bearing comparison on the emulation-confounded macOS host is \texttt{strategy} versus \texttt{cli}: because both share the identical container and Rosetta translation path, their difference isolates the marginal cost the extension adds beyond raw containerization, and this quantity needs no native baseline.
+
+\subsection{Timing and Statistical Protocol}
+The benchmarking protocol comprises an unrecorded warm-up phase followed by a statistically controlled measurement phase.
+\begin{itemize}
+    \item \textbf{Warm-up.} Two unrecorded warm-up runs are executed for each backend, priming OS and CPU caches and, for the containerized backends, the Docker daemon's connection structures and local image layer cache, so the measured iterations reflect steady state rather than first-run setup.
+    \item \textbf{CV-adaptive repetition.} Each suite takes a floor of $n = 30$ measured iterations and continues sampling until the coefficient of variation (CV) falls to or below a $15\,\%$ target or a cap of $60$ iterations is reached, so noisy workloads are sampled more heavily and quiet ones are not over-sampled.
+\end{itemize}
+
+Each per-iteration interval is captured in Python with \texttt{time.perf\_counter()}. From the recorded samples the harness computes the arithmetic mean with a two-sided $95\,\%$ Student-$t$ confidence interval and the CV. Each container backend is compared against the reference with Welch's unpaired $t$-test for unequal variances, reporting the Welch--Satterthwaite degrees of freedom, a two-sided $p$-value, and Cohen's $d$ effect size; $p$-values are Holm--Bonferroni corrected for the family-wise error rate across the whole workload $\times$ platform $\times$ backend matrix. In-container peak memory is read from the Docker stats stream (\texttt{container\_peak\_mem\_mb}) rather than host-side accounting. The one-time image-acquisition cost is measured separately as a dedicated \texttt{lifecycle\_floor} workload so it never contaminates the steady-state figures. The harness additionally records the median and the 95th percentile, but the tables in this chapter report dispersion through the CV and confidence interval.
+
+\section{Quantitative Results (Performance)}
+
+The overhead axis is characterized across the seven-workload FPGA corpus---iCE40 and ECP5 synthesis, place-and-route and bitstream packing, plus Icarus~Verilog simulation---each a single-tool dispatch mirroring how OneWare drives the toolchain. A bare no-op container invocation (\texttt{lifecycle\_floor}) is measured separately as the fixed per-invocation floor. The axis is reported on Machine~1 (emulated \texttt{amd64}, Section~\ref{subsec:overhead_macos_sub}), Machine~2 (native \texttt{amd64} with a same-build native baseline, Section~\ref{subsec:overhead_linux}), and Machine~3 (native \texttt{amd64}, Section~\ref{subsec:overhead_windows}); all figures are the committed harness output for the \texttt{macos-arm64}, \texttt{linux-amd64}, and \texttt{windows-amd64} platforms respectively.
+
+\subsection{Extension Overhead on Machine 1 (macOS, Apple Silicon)}
+\label{subsec:overhead_macos_sub}
+Table~\ref{tab:overhead_macos} reports, for each workload, the mean wall-clock time of the raw Docker CLI backend and of the real strategy backend, with $95\,\%$ confidence intervals and coefficients of variation, and the extension overhead factor (strategy mean divided by CLI mean). Because no native baseline is captured on this emulation-confounded host (Section~\ref{sec:data_status}), the reported ratio isolates the marginal cost of the integration layer over raw containerization rather than the cost of containerization itself. Every strategy-versus-CLI difference is statistically significant after Holm--Bonferroni correction ($p \approx 0$).
+
+\begin{table}[H]
+    \caption{Extension overhead on Machine~1 (Apple M4 Max, macOS Tahoe 26.6, Docker 29.4.0). CLI and strategy backends only; $n = 30$ unless noted; $95\,\%$ Student-$t$ CIs. Ext. overhead is the strategy-to-CLI mean ratio.}
+    \label{tab:overhead_macos}
+    \centering
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabularx}{\textwidth}{@{} X S[table-format=1.4] c S[table-format=2.1] S[table-format=1.4] c S[table-format=2.1] S[table-format=1.2] @{}}
+    \toprule
+     & \multicolumn{3}{c}{\textbf{CLI container}} & \multicolumn{3}{c}{\textbf{Strategy (as shipped)}} & \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    \textbf{Workload} & {\textbf{Mean (s)}} & {\textbf{95\,\% CI}} & {\textbf{CV\%}} & {\textbf{Mean (s)}} & {\textbf{95\,\% CI}} & {\textbf{CV\%}} & {\textbf{Ext.\ ov.}} \\
+    \midrule
+    synth\_ice40\_yosys  & 1.3456 & {[1.333, 1.358]} & 2.5 & 1.5042 & {[1.495, 1.513]} & 1.6 & 1.12 \\
+    synth\_ecp5\_yosys   & 1.1647 & {[1.154, 1.176]} & 2.5 & 1.3111 & {[1.296, 1.327]} & 3.2 & 1.13 \\
+    pnr\_ice40\_nextpnr  & 0.6309 & {[0.621, 0.641]} & 4.3 & 0.8207 & {[0.813, 0.829]} & 2.6 & 1.30 \\
+    pnr\_ecp5\_nextpnr   & 1.0036 & {[0.993, 1.015]} & 3.0 & 1.1866 & {[1.178, 1.195]} & 2.0 & 1.18 \\
+    pack\_ice40\_icepack & 0.3490 & {[0.341, 0.358]} & 6.5 & 0.5634 & {[0.555, 0.572]} & 3.9 & 1.61 \\
+    pack\_ecp5\_ecppack  & 0.9976 & {[0.990, 1.006]} & 2.2 & 1.1785 & {[1.169, 1.189]} & 2.3 & 1.18 \\
+    sim\_iverilog        & 0.5283 & {[0.519, 0.538]} & 4.8 & 0.7130 & {[0.709, 0.717]} & 1.6 & 1.35 \\
+    \midrule
+    lifecycle\_floor\textsuperscript{a} & 0.2504 & {[0.239, 0.262]} & 12.1 & 0.4520 & {[0.432, 0.472]} & 15.0 & 1.81 \\
+    \bottomrule
+    \end{tabularx}
+    \begin{flushleft}\scriptsize
+    \textsuperscript{a}~Bare no-op container floor (strategy backend $n = 48$); reported separately from the FPGA workloads and not folded into the steady-state figures.
+    The native \texttt{x86\_64} counterparts to this table are Table~\ref{tab:overhead_linux} (Machine~2) and Table~\ref{tab:overhead_windows} (Machine~3). A container-versus-native baseline is available only where the native and container toolchains are the same build (Section~\ref{subsec:native_baseline}); that condition holds only on Machine~2, whose baseline is reported in Table~\ref{tab:overhead_linux}.
+    \end{flushleft}
+\end{table}
+
+Across the seven real FPGA workloads the extension overhead ranges from $1.12\times$ to $1.61\times$, while the bare lifecycle floor stands at $1.81\times$. The absolute marginal cost (strategy minus CLI) is tightly clustered at roughly \SIrange{0.15}{0.21}{\second} per workload (mean $\approx \SI{0.18}{\second}$), and the lifecycle-floor delta is \SI{0.202}{\second}. Because the per-tool marginal cost matches the bare-floor delta, the extension adds a bounded fixed per-dispatch cost, not a cost that scales with compute; the analysis in Section~\ref{subsec:overhead_analysis} develops this.
+
+\subsection{Native Baseline and Overhead on Machine 2 (Linux, native x86\_64)}
+\label{subsec:overhead_linux}
+Machine~2 is the decisive host: its native \texttt{oss-cad-suite} package is the \emph{same} Clang/Linux build shipped in the image (Section~\ref{subsec:native_baseline}), so it is the only measured platform on which a valid container-versus-native comparison---the factor $\alpha$---can be drawn, free of both the Rosetta translation of Machine~1 and the MinGW/Clang build mismatch of Machine~3. The full protocol was repeated with the native backend admitted. Table~\ref{tab:overhead_linux} reports, per workload, the mean wall-clock time of the native, CLI-container, and strategy backends, the additive container floor $\Delta_{\mathrm{cont}}$ (CLI minus native), and the two overhead ratios. Every strategy-versus-CLI difference is significant after Holm--Bonferroni correction (Welch $p \approx 0$).
+
+\begin{table}[H]
+    \caption{Native baseline and overhead on Machine~2 (Intel Core Ultra~9 285H, Ubuntu 26.04, Docker 29.1.3, native \texttt{x86\_64}). All three backends; $n = 30$ unless noted; means shown to \SI{0.1}{\milli\second}, with $95\,\%$ Student-$t$ CIs in the apparatus (\texttt{summary.csv}; all FPGA workloads CV $< 7\,\%$). $\Delta_{\mathrm{cont}}$ is the additive container floor (CLI minus native); Cont.\ ov.\ the CLI-to-native ratio; Ext.\ ov.\ the strategy-to-CLI ratio.}
+    \label{tab:overhead_linux}
+    \centering
+    \small
+    \setlength{\tabcolsep}{5pt}
+    \begin{tabularx}{\textwidth}{@{} X S[table-format=1.4] S[table-format=1.4] S[table-format=1.4] S[table-format=1.3] S[table-format=2.2] S[table-format=1.2] @{}}
+    \toprule
+    \textbf{Workload} & {\textbf{Native (s)}} & {\textbf{CLI (s)}} & {\textbf{Strategy (s)}} & {$\Delta_{\mathrm{cont}}$ \textbf{(s)}} & {\textbf{Cont.\ ov.}} & {\textbf{Ext.\ ov.}} \\
+    \midrule
+    synth\_ice40\_yosys  & 0.3570 & 0.6154 & 0.8244 & 0.258 & 1.72 & 1.34 \\
+    synth\_ecp5\_yosys   & 0.2649 & 0.5822 & 0.7656 & 0.317 & 2.20 & 1.32 \\
+    pnr\_ice40\_nextpnr  & 0.0643 & 0.3481 & 0.5605 & 0.284 & 5.41 & 1.61 \\
+    pnr\_ecp5\_nextpnr   & 0.3686 & 0.6656 & 0.8711 & 0.297 & 1.81 & 1.31 \\
+    pack\_ice40\_icepack & 0.0159 & 0.3148 & 0.5236 & 0.299 & 19.80 & 1.66 \\
+    pack\_ecp5\_ecppack  & 0.5125 & 0.7710 & 1.0049 & 0.259 & 1.50 & 1.30 \\
+    sim\_iverilog        & 0.0319 & 0.3182 & 0.5203 & 0.286 & 9.97 & 1.64 \\
+    \midrule
+    lifecycle\_floor\textsuperscript{a} & 0.0012 & 0.3283 & 0.5069 & 0.327 & {--} & 1.54 \\
+    \bottomrule
+    \end{tabularx}
+    \begin{flushleft}\scriptsize
+    \textsuperscript{a}~Bare no-op container floor (native $n = 60$); its native time measures harness dispatch only, so the container-versus-native \emph{ratio} is undefined and $\Delta_{\mathrm{cont}}$ is the meaningful figure. Native version strings for \texttt{nextpnr}, \texttt{icepack}, and \texttt{ecppack} were not resolved by the harness; their native timings were captured and their build parity with the image rests on the shared \texttt{oss-cad-suite} package (Section~\ref{subsec:native_baseline}), whereas Yosys and Icarus~Verilog---the corpus tools with a native counterpart the harness could probe---are version-verified identical natively and in-container.
+    \end{flushleft}
+\end{table}
+
+Two results follow, one per overhead axis. First, the \textbf{container-versus-native factor $\alpha$}. The additive container floor $\Delta_{\mathrm{cont}}$ is nearly constant---\SIrange{0.258}{0.327}{\second} across all workloads (FPGA mean $\approx \SI{0.286}{\second}$, bare \texttt{lifecycle\_floor} \SI{0.327}{\second})---while the native compute it sits on top of spans more than an order of magnitude, from \SI{16}{\milli\second} (\texttt{pack\_ice40}) to \SI{0.51}{\second} (\texttt{pack\_ecp5}). That the floor does \emph{not} grow with native compute is the measurement the evaluation had been missing: containerization adds a fixed per-invocation cost and \emph{no} per-instruction tax, i.e.\ $\alpha \approx 1$ on native-architecture hardware. The container-versus-native \emph{ratio} is correspondingly large only where the native work is trivial (\num{19.80}$\times$ for the \SI{16}{\milli\second} \texttt{pack\_ice40}, \num{1.50}$\times$ for the \SI{0.51}{\second} \texttt{pack\_ecp5}); it is an artifact of dividing a fixed floor by a small denominator, not evidence of a compute penalty. This confirms on un-emulated, same-build hardware the decomposition that Machines~1 and~3 could only assert: the cost is a lifecycle floor plus native-speed compute.
+
+Second, the \textbf{extension overhead} (strategy versus CLI) reproduces the macOS finding on native, same-build hardware, and is confirmed independently on the Windows host (Section~\ref{subsec:overhead_windows}). The marginal cost is a bounded \SIrange{0.18}{0.23}{\second} per FPGA workload (mean $\approx \SI{0.208}{\second}$), again matching the \texttt{lifecycle\_floor} delta (\SI{0.179}{\second}) rather than scaling with compute, for a relative overhead of \numrange{1.30}{1.66}$\times$ on the FPGA workloads. The fixed-floor structure of the integration layer thus holds across all three hosts---two host architectures, three operating systems, emulated and native execution alike---establishing it as a property of the design rather than of any one platform.
+
+\subsection{Extension Overhead on Machine 3 (Windows, native x86\_64)}
+\label{subsec:overhead_windows}
+Machine~3 repeats the identical protocol on a second native \texttt{x86\_64} host, where the \texttt{linux/amd64} image runs under WSL2 with no instruction-set translation. This removes the emulation confound from the marginal-cost axis: the strategy-versus-CLI difference here is the extension's cost over raw containerization on hardware that runs the toolchain at native speed. Table~\ref{tab:overhead_windows} reports the same quantities as Table~\ref{tab:overhead_macos}. Every strategy-versus-CLI difference is again significant after Holm--Bonferroni correction (Welch $p$ between $\approx 10^{-11}$ and $\approx 10^{-57}$; Cohen's $d$ between $\approx 2$ and $\approx 18$).
+
+\begin{table}[H]
+    \caption{Extension overhead on Machine~3 (Intel Core Ultra~7 155H, Windows~11, Docker~29.6.1, native \texttt{x86\_64}). CLI and strategy backends only; $n = 30$ unless noted; $95\,\%$ Student-$t$ CIs. Ext. overhead is the strategy-to-CLI mean ratio.}
+    \label{tab:overhead_windows}
+    \centering
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabularx}{\textwidth}{@{} X S[table-format=1.4] c S[table-format=2.1] S[table-format=1.4] c S[table-format=2.1] S[table-format=1.2] @{}}
+    \toprule
+     & \multicolumn{3}{c}{\textbf{CLI container}} & \multicolumn{3}{c}{\textbf{Strategy (as shipped)}} & \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    \textbf{Workload} & {\textbf{Mean (s)}} & {\textbf{95\,\% CI}} & {\textbf{CV\%}} & {\textbf{Mean (s)}} & {\textbf{95\,\% CI}} & {\textbf{CV\%}} & {\textbf{Ext.\ ov.}} \\
+    \midrule
+    synth\_ice40\_yosys  & 0.9849 & {[0.974, 0.996]} & 2.9 & 1.1797 & {[1.139, 1.221]} & 9.3 & 1.20 \\
+    synth\_ecp5\_yosys   & 0.8801 & {[0.872, 0.888]} & 2.3 & 1.1596 & {[1.131, 1.188]} & 6.7 & 1.32 \\
+    pnr\_ice40\_nextpnr\textsuperscript{a} & 1.5436 & {[1.534, 1.553]} & 1.6 & 2.1905 & {[2.087, 2.294]} & 18.1 & 1.42 \\
+    pnr\_ecp5\_nextpnr   & 1.1533 & {[1.142, 1.164]} & 2.6 & 1.4034 & {[1.373, 1.434]} & 5.8 & 1.22 \\
+    pack\_ice40\_icepack & 0.4472 & {[0.442, 0.453]} & 3.2 & 0.6975 & {[0.692, 0.703]} & 2.0 & 1.56 \\
+    pack\_ecp5\_ecppack  & 1.1550 & {[1.144, 1.166]} & 2.5 & 1.3314 & {[1.319, 1.343]} & 2.4 & 1.15 \\
+    sim\_iverilog        & 0.4595 & {[0.454, 0.465]} & 3.2 & 0.6815 & {[0.676, 0.688]} & 2.4 & 1.48 \\
+    \midrule
+    lifecycle\_floor     & 0.4227 & {[0.416, 0.429]} & 4.2 & 0.6775 & {[0.666, 0.689]} & 4.6 & 1.60 \\
+    \bottomrule
+    \end{tabularx}
+    \begin{flushleft}\scriptsize
+    \textsuperscript{a}~The \texttt{pnr\_ice40} strategy backend showed a bimodal, elevated timing on the named-pipe log-drain path (iterations alternating $\approx\SI{1.75}{\second}$/$\approx\SI{2.58}{\second}$), driving its CV to $18.1\,\%$ and, under the CV-adaptive rule, escalation to $n = 60$; every iteration returned exit code~0. The CLI backend for the same workload was stable (CV $1.6\,\%$) and the macOS strategy run was clean (CV $2.6\,\%$), so this is a transport-path variance artifact on the heaviest place-and-route job, not a compute cost; its mean is reported with the wider CI.\\[2pt]
+    The strategy backend was driven over the Docker~Desktop \emph{named pipe}---the default Windows endpoint and the transport the corrected output-capture path targets (Section~\ref{subsec:npipe_defect})---so these figures exercise the shipped code over its real Windows transport. The timed run used the Windows ``High Performance'' power plan; the low CVs (all $\le 6.7\,\%$ apart from the \texttt{synth\_ice40} strategy run at $9.3\,\%$ and the \texttt{pnr\_ice40} strategy artifact noted above) indicate stable timing.
+    \end{flushleft}
+\end{table}
+
+The native \texttt{x86\_64} result reproduces the macOS and Linux findings without the emulation confound. In relative terms the seven FPGA workloads span $1.15\times$ to $1.56\times$ and the bare floor is $1.60\times$, again largest on the cheapest workload and shrinking as the containerized work grows. In absolute terms the marginal cost (strategy minus CLI) is once more a bounded per-dispatch increment: six of the seven FPGA workloads cluster in \SIrange{0.18}{0.28}{\second} (mean $\approx \SI{0.23}{\second}$), matching the \SI{0.255}{\second} \texttt{lifecycle\_floor} delta, so the per-tool cost again coincides with the no-op floor rather than scaling with compute. The exception is \texttt{pnr\_ice40} (strategy delta $\approx \SI{0.65}{\second}$), whose bimodal timing on the named-pipe log-drain path inflated both its mean and its variance (Table~\ref{tab:overhead_windows}, note~a); it is a transport-path artifact on the heaviest place-and-route job rather than a compute tax, as its CLI backend and the macOS strategy run of the same workload were both stable. The extension therefore adds a bounded fixed per-dispatch cost and no compute tax on native hardware, confirming that the pattern observed on Machines~1 and~2 is a property of the integration layer and not an artifact of Rosetta translation. The absolute floor is larger here than on Machine~1 ($\approx \SI{0.25}{\second}$ versus $\approx \SI{0.18}{\second}$); this is a per-host figure, not a like-for-like cross-platform comparison, as the two hosts differ in operating system, container daemon (WSL2 Docker Desktop versus OrbStack), and daemon transport. What transfers across hosts is the \emph{structure}---a fixed, compute-independent dispatch floor---not its absolute magnitude.
+
+\subsection{Structured Telemetry Performance}
+To characterize the instrumentation path under saturation, a synthetic multi-process telemetry stress test was executed (Listing~\ref{lst:stress_test_log}). Four processes ran concurrently; each spawned 16 threads that emitted \num{1000} logging transactions apiece, so each process completed \num{16000} events in \SI{2602}{\milli\second}---an in-process throughput of roughly \num{6150} events per second---at a 100\,\% success rate (\num{16000} succeeded, zero errors) and with no deadlocks across the four contending processes. This is a synthetic microbenchmark of the instrumentation in isolation, not a measurement under a real synthesis workload; it exercises the source-generated JSON serialization path, which is span-based and allocates only the serialized payload.
+
+\subsection{Telemetry Scalability and Lock Contention Limits}
+Structured telemetry logging is critical for auditing and diagnostic trace capability in EDA pipelines, but it presents strict performance challenges. In multi-instance IDE scenarios, multiple independent compilation engines may log to a single telemetry store simultaneously.
+The telemetry engine (\texttt{ContainerTelemetry}) utilizes structured JSON serialization and coordinates writes via system-wide Mutex primitives (specifically \texttt{System.Threading.Mutex} on Windows and Unix). While a system-wide Mutex ensures that log writes from different processes are serialized, preventing data corruption or interleaved JSON structures, it introduces lock contention overhead.
+
+To evaluate these synchronization overhead limits, we analyze the relationship between thread count, lock contention time, and aggregate throughput. Let $N_{\text{threads}}$ represent the number of concurrent execution threads. Let $t_{\text{serialize}}$ represent the CPU time required to serialize a log entry to JSON format (approximately \SI{15}{\micro\second}). Let $t_{\text{mutex\_lock}}$ be the overhead to acquire and release the system-wide mutex (approximately \SI{45}{\micro\second} on macOS and \SI{90}{\micro\second} on Windows due to kernel-mode transit costs); these constants are illustrative order-of-magnitude estimates rather than measured values. The average wait time $t_{\text{wait}}$ for a thread attempting to write a log entry under saturated load is modeled as:
+
+\begin{equation}
+t_{\text{wait}} \approx (N_{\text{threads}} - 1) \cdot (t_{\text{serialize}} + t_{\text{mutex\_lock}})
+\end{equation}
+
+Under high concurrency (e.g., $N_{\text{threads}} = 32$), the wait time for a single write transaction escalates to:
+\begin{equation}
+t_{\text{wait}} \approx 31 \cdot (\SI{15}{\micro\second} + \SI{45}{\micro\second}) = \SI{1.86}{\milli\second}
+\end{equation}
+
+While this latency is negligible for human-facing UI events, it bounds high-throughput instrumentation. Under the worst-case assumption that every write serializes behind a single lock, \num{10000} progress packets would add on the order of \SI{18.6}{\second}; this is a loose analytic upper bound, and the lock-free error path described below, together with the modest packet rate of interactive synthesis, keeps the realized cost far smaller.
+These bounds apply specifically to the \emph{execution-log file write}, which is serialized for correctness: to prevent corruption or interleaved JSON under concurrent multi-instance IDE scenarios, the engine (\texttt{ContainerTelemetry}) coordinates file access via a reader-writer lock (\texttt{ReaderWriterLockSlim}) and a system-wide Mutex (\texttt{System.Threading.Mutex}), and this write blocks the calling thread until it completes. The high-frequency error-telemetry path, by contrast, is not on this critical section: error events are enqueued lock-free into an unbounded channel and drained by a single background consumer. The contention model above therefore bounds only the synchronous file-write path, not the instrumentation as a whole.
+
+\section{Analysis and Discussion}
+
+\subsection{Analysis of Performance Overhead}
+\label{subsec:overhead_analysis}
+The cleanly attributable result on Machine~1 is the marginal cost the extension adds over raw containerization---the strategy-versus-CLI difference in Table~\ref{tab:overhead_macos}. Two observations characterize it. First, in relative terms the seven FPGA workloads span $1.12\times$ to $1.61\times$, with the shortest workload (\texttt{pack\_ice40\_icepack}, CLI mean \SI{0.349}{\second}) at the top of the range and the longest (\texttt{synth\_ice40\_yosys}, CLI mean \SI{1.346}{\second}) at the bottom---the ratio shrinks as the containerized work grows. Second, in absolute terms the marginal cost is nearly constant: strategy minus CLI is \SIrange{0.15}{0.21}{\second} across all seven workloads (mean $\approx \SI{0.18}{\second}$), and the bare \texttt{lifecycle\_floor} delta is \SI{0.202}{\second}. That the per-tool marginal cost coincides with the no-op floor delta is the key finding: the extension contributes a bounded, fixed per-dispatch cost---daemon-socket orchestration, request/response marshalling and lifecycle management---and essentially no compute tax. Compute time net of the lifecycle floor is unchanged between the two backends. Every difference is significant after Holm--Bonferroni correction ($p \approx 0$), so the effect is real rather than sampling noise, but its practical magnitude is a sub-second constant per tool invocation.
+
+To place this marginal cost in the wider containerization picture---and to frame the same-build native measurement of Section~\ref{subsec:overhead_linux}---the total containerized execution time can be modeled as
+\begin{equation}
+T_{\text{container}} = \alpha \cdot T_{\text{native}} + T_{\text{overhead}},
+\end{equation}
+where $T_{\text{native}}$ is the tool's native execution time, $T_{\text{overhead}}$ is the fixed per-invocation container cost (namespace setup, process scheduling, volume mounting, and---for the strategy backend---the extension's dispatch floor), and $\alpha$ is the continuous execution multiplier of the environment: $\alpha \approx 1$ for native-architecture container execution, and $\alpha > 1$ under binary translation, where instruction expansion, memory-consistency mapping and guest--host context switches impose a per-cycle tax. The relative overhead is then
+\begin{equation}
+O_{\text{relative}} = \frac{T_{\text{container}}}{T_{\text{native}}} = \alpha + \frac{T_{\text{overhead}}}{T_{\text{native}}},
+\qquad
+\lim_{T_{\text{native}} \to \infty} O_{\text{relative}} = \alpha .
+\end{equation}
+The model makes the decisive quantity explicit: $\alpha$ is the container-versus-native multiplier, which cannot be isolated on Machine~1 (its $T_{\text{native}}$ is itself emulated) or on Machine~3 (no same-build native baseline exists there; the native Windows toolchain is a different build from the container's; Section~\ref{subsec:native_baseline}), but \emph{is} recovered on the native \texttt{x86\_64} Linux host (Machine~2), where the same image runs without Rosetta translation \emph{and} the native package is the identical build shipped in the image. That measurement (Section~\ref{subsec:overhead_linux}, Table~\ref{tab:overhead_linux}) yields $\alpha \approx 1$: the additive container floor is a near-constant \SIrange{0.26}{0.33}{\second} whether the native work beneath it is \SI{16}{\milli\second} or half a second, so the container adds a fixed lifecycle cost and no per-instruction tax, and the relative overhead collapses toward that floor as workloads grow---exactly the predicted native-architecture behavior. Under macOS emulation a residual per-cycle tax is expected to persist instead: the literature reports a sustained \SI{8.94}{\percent} Rosetta~2 hardware-TSO penalty~\cite{Wrenger2024AppleM1}, i.e.\ $\alpha \approx 1.089$ under emulation, cited as background for the emulated regime rather than a value measured here. The evaluation thus measures both components of the cost: the extension's marginal floor on all three hosts (\SI{0.18}{\second} on Machine~1, \SI{0.21}{\second} on Machine~2, \SI{0.25}{\second} on Machine~3), and---on Machine~2---the container-versus-native factor $\alpha \approx 1$ that had been the one missing quantity.
+
+\subsection{The Native Baseline and the Version-Parity Gate}
+\label{subsec:native_baseline}
+Fixing $\alpha$ requires a native-versus-container comparison in which the two toolchains are the \emph{same build}: same source, same compiler, same operating system, same architecture. A comparison that violates this measures build differences rather than the cost of containerization. The evaluation therefore admits a native baseline only after a version-parity gate confirms that each native tool reports the identical version string to the one inside the image; on a mismatch the native comparison is discarded rather than reported.
+
+On Machine~3 this gate fired. The matching dated Windows \texttt{oss-cad-suite} release was installed and probed against the container. Yosys reported the same source and commit on both sides (\texttt{0.66+181}, git \texttt{afe6b18f2}) but different builds---\texttt{GNU x86\_64-w64-mingw32-g++ 13.2.1} natively versus \texttt{Clang 18.1.8} in the container, i.e.\ a Windows PE against a Linux ELF---while GHDL was absent from the Windows native release entirely and only Icarus~Verilog matched. A same-build native baseline is thus unobtainable on Windows, and the gate correctly rejected it. On Machine~2 the gate instead \emph{passed}: the host's native \texttt{oss-cad-suite} package is the Clang/Linux build shipped in the image, so the native-versus-container comparison is admissible there. Parity is version-verified for the three tools the harness could probe---Yosys (\texttt{0.66+181}, git \texttt{afe6b18f2}, Clang~18.1.8), GHDL, and Icarus~Verilog each report identical native and in-container versions---while for \texttt{nextpnr}, \texttt{icepack}, and \texttt{ecppack} the harness resolved no native version string; their parity rests on the native binaries being installed from the same \texttt{oss-cad-suite} release that populates the image, rather than on a captured version. The resulting baseline gives $\alpha \approx 1$ and is reported in Section~\ref{subsec:overhead_linux}. Notably, the native Windows and native Linux Yosys builds differ from each other (MinGW versus Clang) yet the container produces byte-identical outputs on every host (Section~\ref{subsec:determinism_results}): a divergence in build provenance is a compiler/OS artifact of identical source, not a difference in behavior.
+
+\subsection{Cross-Platform Output Determinism}
+\label{subsec:determinism_results}
+All three machines together permit a genuine cross-platform test of a core claim behind RQ1: that dispatching a tool into the pinned container makes its output independent of the host. Each toolchain artifact is SHA-256 hashed after generation on every machine; identical hashes across one ARM64-hosted and two independent \texttt{x86\_64}-hosted executions of the image are direct evidence of machine independence. Table~\ref{tab:determinism} summarizes the comparison.
+
+\begin{table}[H]
+    \caption{Cross-platform artifact determinism: SHA-256 (first 12 hex digits) of each toolchain output on Machine~1 (macOS, ARM64 host, emulated \texttt{amd64} container), Machine~2 (Linux, native \texttt{amd64} container), and Machine~3 (Windows, native \texttt{amd64} container).}
+    \label{tab:determinism}
+    \centering
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabularx}{\textwidth}{@{} X l l l c @{}}
+    \toprule
+    \textbf{Workload (artifact)} & \textbf{linux-amd64} & \textbf{macos-arm64} & \textbf{windows-amd64} & \textbf{Identical?} \\
+    \midrule
+    synth\_ice40\_yosys (\texttt{ice40\_blink.json})   & \texttt{c9d719c17f01} & \texttt{c9d719c17f01} & \texttt{c9d719c17f01} & Yes \\
+    synth\_ecp5\_yosys (\texttt{ecp5\_blink.json})     & \texttt{65bb1549bab3} & \texttt{65bb1549bab3} & \texttt{65bb1549bab3} & Yes \\
+    pnr\_ice40\_nextpnr (\texttt{ice40\_blink.asc})    & \texttt{31350507657f} & \texttt{31350507657f} & \texttt{31350507657f} & Yes \\
+    pnr\_ecp5\_nextpnr (\texttt{ecp5\_blink.config})   & \texttt{ab2628df3a28} & \texttt{ab2628df3a28} & \texttt{ab2628df3a28} & Yes \\
+    pack\_ice40\_icepack (\texttt{ice40\_blink.bin})   & \texttt{a8b0b3aa554c} & \texttt{a8b0b3aa554c} & \texttt{a8b0b3aa554c} & Yes \\
+    pack\_ecp5\_ecppack (\texttt{ecp5\_blink.bit})     & \texttt{37e5e6ab1004} & \texttt{37e5e6ab1004} & \texttt{37e5e6ab1004} & Yes \\
+    sim\_iverilog (\texttt{Blink.vvp})                 & \texttt{229bc0467b2f} & \texttt{f2cf898fe9db} & \texttt{0d8322d8717e} & No\textsuperscript{a} \\
+    \bottomrule
+    \end{tabularx}
+    \begin{flushleft}\scriptsize
+    \textsuperscript{a}~Not a machine dependence. Icarus~Verilog names internal objects after ASLR-varying heap addresses (e.g., \texttt{S\_0x5555\ldots}), so the compiled \texttt{.vvp} differs between two runs on the \emph{same} host and container---verified directly here, as the Machine~3 hash changed between two runs on that one host; the simulation it encodes is semantically identical. This artifact is therefore excluded from the determinism claim.
+    \end{flushleft}
+\end{table}
+
+All six FPGA-flow artifacts---iCE40 and ECP5 synthesis netlists, place-and-route results, and packed bitstreams---are byte-identical across all three hosts, spanning three operating systems (macOS, Linux, Windows) and both host CPU architectures (ARM64 and \texttt{x86\_64}). The result is strengthened, not weakened, by a build detail of the setup: the pinned image is build-only and not published to a registry, so Machine~1 built its own (digest \texttt{sha256:90b9ccab\ldots}) while the two \texttt{x86\_64} hosts obtained \texttt{sha256:6a7572d6\ldots}. These builds nonetheless embed the identical pinned tool binaries---installed from the same \texttt{oss-cad-suite} tarball, verified by checksum---which is precisely why the outputs match. Host operating system, host architecture, and even the image build all differ; the tool binaries and their outputs do not. This isolates the container's contribution: by pinning the toolchain binaries it renders hardware compilation reproducible across machines, which is the machine-independence property RQ1 asserts.
+
+To confirm this directly rather than resting it on the checksum argument, the exact image Machine~3 executed (ID \texttt{sha256:6a7572d6\ldots}) was exported with \texttt{docker save}, loaded unchanged onto Machine~1, and the six FPGA workloads re-run against it. Every artifact was byte-identical to both prior runs at once: to Machine~3's---the \emph{same} image on a different host and CPU architecture---and to Machine~1's original run under its own independently built image---a \emph{different} image build on the same host. Holding the image constant across hosts and holding the host constant across image builds thus both leave every FPGA artifact unchanged, isolating the container's contribution beyond the checksum argument: the pinned toolchain, not the host, the architecture, or the image wrapper, determines the output.
+
+\subsection{Virtualization Hypervisor and File Sharing Overhead}
+In virtualized development environments, the interface through which host files are shared with the guest operating system represents a major I/O bottleneck. Paravirtualized systems rely on file sharing protocols to expose active workspaces to compilation container sandboxes. 
+
+\subsubsection{VirtioFS and Direct Access (DAX) Mechanics}
+Early virtualization interfaces utilized remote file protocols like 9pfs or translation layers like gRPC-FUSE. Under gRPC-FUSE, every Virtual File System (VFS) call in the guest kernel is serialized into a gRPC message, transported over an IPC socket to the host, deserialized, processed by the host's OS filesystem, and returned via the same path. For VHDL/Verilog compilation pipelines that perform thousands of random file access queries (such as importing library files or executing recursive synthesis lookups), gRPC-FUSE context-switching overhead causes millisecond-scale latency penalties per operation, degrading build performance by up to 10x.
+
+To overcome this, paravirtualized filesystems like VirtioFS expose a shared memory region between the host and guest VM. In traditional configurations, file contents are duplicated across page caches, residing both in the host kernel's page cache and the guest VM kernel's page cache. This double caching consumes double the system memory and introduces page cache synchronization bottlenecks during writeback operations.
+
+VirtioFS mitigates this by supporting Direct Access (DAX). Under DAX, the hypervisor maps the host operating system's page cache directly into a dedicated physical address range within the guest VM's address space. The guest kernel VFS layer accesses these host page cache frames directly using standard CPU memory operations (loads and stores), completely bypassing the guest page cache. This architectural improvement eliminates memory duplication and payload copying over virtual queue rings, reducing file read latency to near-native levels.
+
+\subsubsection{Virtio-blk Block Storage Benchmarks}
+In high-density serverless container platforms (e.g., RunD \cite{Li2022RunD}), directory sharing protocols are completely bypassed. Instead, containers read and write their active filesystems to virtualized raw block devices (\texttt{virtio-blk}) managed via host-level device mappers. The guest VM mounts a standard filesystem (like \texttt{ext4}) directly on the virtual block device, bypassing host-side filesystem metadata tracking entirely during runtime execution. Empirical evaluations demonstrate that \texttt{virtio-blk} configurations achieve up to a 3-5x write IOPS increase compared to paravirtualized file sharing (VirtioFS), which is highly beneficial for intermediate compilation steps that output massive temporary netlists.
+
+However, block device virtualization introduces a strict architectural limitation regarding concurrency. Because standard local filesystems (such as \texttt{ext4} or \texttt{xfs}) are not cluster-aware, they do not implement distributed lock managers (DLM). If a raw block device is mounted concurrently writable by both the host operating system (on behalf of the developer's IDE) and the guest virtual machine (on behalf of the containerized compiler), the concurrent modifications will overwrite filesystem metadata, resulting in immediate and catastrophic volume corruption. Consequently, while \texttt{virtio-blk} overlays are highly effective in read-only or single-tenant serverless execution environments, they are unusable for active interactive design workspaces. For IDE integration, paravirtualized shared filesystems like VirtioFS remain mandatory to safely coordinate concurrent file locking and maintain cache consistency.
+
+\subsection{Dynamic Binary Translation and Hardware TSO Memory Consistency}
+To run x86\_64 compilers on Apple Silicon ARM64 processors, the system relies on Dynamic Binary Translation (DBT) via Rosetta 2. In addition to instruction mapping, the DBT engine must bridge divergent memory consistency models.
+
+\subsubsection{Total Store Ordering (TSO) vs Weak Memory Ordering (WMO)}
+The x86\_64 architecture enforces Total Store Ordering (TSO), which guarantees that memory writes from any CPU core are observed by all other cores in their exact program execution order. Multi-threaded compiler toolchains leverage TSO to synchronize shared-memory states without injecting explicit software barriers. Conversely, ARM64 implements a Weak Memory Ordering (WMO) model, allowing aggressive hardware instruction reordering, store-store bypasses, and load reordering to maximize pipeline throughput.
+
+If a binary translator (such as QEMU) emulates TSO on a WMO processor in software, it must insert memory barrier instructions (e.g., \texttt{DMB} or \texttt{DSB}) after every memory operation. These barriers halt the execution pipeline until all pending writes are committed, causing a pipeline serialization tax that can degrade multi-threaded performance by a large factor for barrier-heavy workloads.
+
+\subsubsection{ACTLR\_EL1 Register Switching and Thread Scheduling Mechanics}
+To run x86\_64 binaries on Apple Silicon's ARM64 architecture, the Rosetta 2 Dynamic Binary Translation (DBT) framework operates at Exception Level 0 (EL0) \cite{apple2020rosetta, altinay2020survey}. It parses x86\_64 CISC machine instructions and translates them into equivalent ARM64 RISC instructions. While instruction set translation is computationally intensive, the most significant challenge in cross-ISA (Instruction Set Architecture) emulation is the reconciliation of memory consistency models. The x86\_64 architecture enforces Total Store Ordering (TSO) \cite{Reimers2026Arancini, Gao2024CrossMapping}, which guarantees that all writes are observed in a single global order and preserves load--load, load--store, and store--store program order; the sole relaxation is that a load may be reordered with an older store to a different address. ARM64, by contrast, implements Weak Memory Ordering (WMO) \cite{Gouicem2023Risotto, Wrenger2024AppleM1}, which allows arbitrary reordering of loads and stores to different memory locations.
+
+To bridge this gap without the severe performance penalties of injecting software memory barriers (e.g., \texttt{DMB} or \texttt{DSB}) after every instruction, Apple Silicon CPUs include proprietary hardware-assisted TSO support. The microarchitecture contains a specialized control flag in the Auxiliary Control Register at Exception Level 1 (\texttt{ACTLR\_EL1}), which alters the behavior of the core's Load/Store Unit (LSU). The mechanics of this hardware switch and scheduling pipeline proceed as follows:
+\begin{enumerate}
+    \item \textbf{Process and Thread Registration}: When the macOS kernel (XNU) loads a translated x86\_64 binary under Rosetta 2, it marks the task structure (representing the process) with a specialized flag indicating that the process requires hardware TSO support.
+    \item \textbf{Thread Context Switching}: During thread scheduling, the XNU scheduler selects the next thread to execute on a physical core. If the incoming thread belongs to an x86\_64 translated process, the kernel executes a context swap handler.
+    \item \textbf{Register Toggling}: The kernel writes to the proprietary system register (often accessed via implementation-defined system register commands such as \texttt{msr S3\_6\_c15\_c1\_0, x0} or similar system registers mapping to the \texttt{ACTLR\_EL1} address space). Toggling the TSO enable bit reconfigures the physical CPU core.
+    \item \textbf{Pipeline Flush and LSU Reconfiguration}: Writing to this system register triggers a microarchitectural pipeline flush on the core, forcing all pending memory operations to drain. The LSU is then reconfigured to enforce TSO. When the thread is descheduled or a native ARM64 thread is scheduled, the kernel toggles the bit back to native WMO mode, reverting the core to its highly parallel weak memory state.
+\end{enumerate}
+
+Because the \texttt{ACTLR\_EL1} register is restricted to Exception Level 1 (kernel mode), user-space applications operating at Exception Level 0 (EL0)---including Rosetta 2 and the OneWare Studio process---are restricted from accessing or writing to this register directly. Any direct instruction attempt to write to \texttt{ACTLR\_EL1} from EL0 violates CPU execution boundaries and triggers a synchronous processor exception, causing the host operating system to terminate the process. Instead, this hardware consistency mode is managed dynamically by the host kernel. Furthermore, equating Apple's kernel-assisted hardware TSO switch with software fence injection frameworks (QEMU TCG IR, Arancini, and Risotto) represents a false equivalence; software-only DBT layers must inject memory barriers (\texttt{DMB} or \texttt{DSB}) into their Intermediate Representation (IR), incurring massive pipeline stalls, whereas the hardware switch configuration avoids software instruction emulation overhead entirely.
+
+\subsubsection{Microarchitectural Analysis of the 8.94\% TSO Performance Penalty}
+While hardware-assisted TSO is orders of magnitude faster than software barrier injection, enforcing TSO memory constraints on a core designed for weak ordering introduces an inherent physical performance penalty. Empirically, running workloads under Apple's hardware-assisted TSO mode reveals a sustained \textbf{8.94\%} performance degradation compared to native WMO execution on the same core \cite{Wrenger2024AppleM1}. This penalty is attributed to several microarchitectural serialization effects:
+\begin{itemize}
+    \item \textbf{Loss of Weak-Ordering Freedom}: Under native WMO, the core may retire independent loads and stores out of order, keeping the pipeline and memory system fully utilized. TSO leaves store-to-load reordering intact---a load may still complete ahead of pending stores to different addresses, with same-address accesses satisfied by store-to-load forwarding from the Store Buffer---but it forbids load--load, load--store, and store--store reordering. Enforcing these orders obliges the Load/Store Unit to retire loads in program order and to drain the Store Buffer strictly first-in-first-out, forfeiting reordering freedom the weakly ordered core otherwise exploits and stalling execution when subsequent instructions depend on load data.
+    \item \textbf{Reduced Memory-Level Parallelism (MLP)}: WMO allows the hardware to overlap multiple memory access requests (loads and stores) to different cache lines, hiding cache miss latencies by keeping many memory requests in-flight. TSO's read-to-read, read-to-write, and write-to-write ordering constraints restrict this overlapping capability. The CPU cannot initiate a subsequent memory access until prior access constraints are resolved, directly reducing memory-level parallelism and increasing the cycles-per-instruction (CPI) of memory-bound applications.
+    \item \textbf{Store Buffer Drainage Stalls on Atomics}: Thread synchronization primitives in multi-threaded compilers (such as mutex locks, spinlocks, or atomic read-modify-write sequences) are translated by Rosetta 2 into ARM64 atomic instructions (e.g., Load-Acquire/Store-Release sequences or ARMv8.1 LSE instructions like \texttt{CAS} and \texttt{LDADD}). While TSO allows these to execute without software barriers, the physical core must guarantee atomicity by draining the entire Store Buffer before the atomic operation can commit. This physical draining operation forces the CPU pipeline to stall, waiting for all prior memory stores to propagate to the cache coherent interconnect.
+    \item \textbf{Register Write and Context Switch Overhead}: The physical act of toggling the \texttt{ACTLR\_EL1} register during context switches is not free. Modifying system registers is a highly serializing instruction in the ARM instruction set, requiring the pipeline to be completely flushed and instruction decoding to be paused until the register write is committed. In highly multi-threaded compilation workloads, where threads frequently yield or migrate across cores, these frequent register-level reconfigurations accumulate a measurable context-switching time penalty.
+\end{itemize}
+
+Figure~\ref{fig:tso_translation_path} details the memory consistency translation path from the host macOS kernel down to the virtualized guest VM execution thread.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        comp/.style={fwbox, text width=36mm, minimum height=9mm, font=\scriptsize\sffamily},
+        hw/.style={fwaccent, text width=36mm, minimum height=9mm, font=\scriptsize\sffamily},
+        work/.style={fwalt, text width=36mm, minimum height=9mm, font=\scriptsize\sffamily}
+    ]
+        % Host macOS domain (left)
+        \node (xnu) [comp] at (-4.4, 2.0) {XNU kernel (EL1)\\ schedules \& runs the VM};
+        \node (vfw) [comp, below=9mm of xnu] {Virtualization.framework\\ (VMM; stage-2 translation)};
+        \node (cpu) [hw, below=9mm of vfw] {ARM64 CPU core (Apple Silicon)\\ LSU enforces TSO when\\ \texttt{ACTLR.TSOEN}=1, else WMO};
+        % Guest Linux VM domain (right)
+        \node (gcomp) [work] at (4.4, 2.65) {x86\_64 compiler (Yosys / GHDL)\\ guest EL0};
+        \node (ros) [comp, draw=thred, fill=thred!8, below=9mm of gcomp] {Rosetta 2 runtime (guest EL0)\\ \texttt{prctl(PR\_SET\_MEM\_MODEL\_TSO)}};
+        \node (gk) [comp, below=9mm of ros] {Linux kernel (guest EL1, 4\,KB pages)\\ owns \& context-switches \texttt{ACTLR.TSOEN}};
+        \node (vcpu) [comp, below=9mm of gk] {vCPU thread};
+        % Domain enclosures
+        \begin{scope}[on background layer]
+            \node (hostbox)  [fwsystem, fit=(xnu)(vfw)(cpu), inner sep=7pt] {};
+            \node (guestbox) [fwsystem, fit=(gcomp)(ros)(gk)(vcpu), inner sep=7pt] {};
+        \end{scope}
+        \node [font=\scriptsize\sffamily\bfseries, anchor=south] at (hostbox.north) {Host macOS (ARM64)};
+        \node [font=\scriptsize\sffamily\bfseries, anchor=south] at (guestbox.north) {Guest Linux VM};
+        % Host edges
+        \draw [fwedge] (xnu) -- node[fwlabel] {schedules VM} (vfw);
+        \draw [fwedge] (vfw) -- node[fwlabel] {runs vCPU on} (cpu);
+        % Guest edges
+        \draw [fwedge] (gcomp) -- node[fwlabel] {x86\_64 code} (ros);
+        \draw [fwedge] (ros) -- node[fwlabel] {TSO via \texttt{prctl}} (gk);
+        \draw [fwedge] (gk) -- node[fwlabel] {dispatched as} (vcpu);
+        % Corrected TSO control: the GUEST kernel writes the register on the physical core.
+        \draw [fwedgehl] (gk.west) -- node[fwlabel, align=center, pos=0.5] {context-switch\\ \texttt{ACTLR.TSOEN}} (cpu.east);
+    \end{tikzpicture}
+    \caption[Stage-2 virtualization and TSO path]{Stage-2 virtualization and hardware-assisted TSO path for x86\_64 execution under Rosetta in a Linux VM on Apple Silicon. The \texttt{ACTLR.TSOEN} bit of the physical core provides the x86 memory-consistency guarantee; it is requested per thread by the guest Rosetta runtime (\texttt{prctl}) and context-switched by the guest Linux kernel, while the host hypervisor supplies stage-2 address translation.}
+    \label{fig:tso_translation_path}
+\end{figure}
+
+To bridge these performance gaps on architectures lacking hardware TSO support (such as generic server-class ARM64 or RISC-V platforms), dynamic binary translators must execute advanced software fence planning. The CrossMapping architecture \cite{Gao2024CrossMapping} parses target code blocks and models consistency constraints within the Intermediate Representation (IR), deriving a mathematically minimal memory barrier placement schedule. CrossMapping improves translation performance by 8.5\% on ARMv8 and 7.3\% on RISC-V compared to standard QEMU fence configurations. Similarly, the Risotto framework \cite{Gouicem2023Risotto} applies formally verified x86-to-ARM fence-mapping schemes and, where host libraries exist, a cross-architecture dynamic linker that binds calls to native ARM64 shared libraries instead of translating their guest counterparts. Its verified fence merging and weakened-fence placement improve emulation throughput by up to 19.7\% (6.7\% on average) over a memory-model-incorrect QEMU baseline. The hybrid translator Arancini \cite{Reimers2026Arancini} extends this line of work with a combined static/dynamic translation pipeline for the same weak-memory setting.
+
+\subsubsection{Continuous Translation Overhead}
+Even with hardware-assisted memory consistency mapping, translated container execution is subject to continuous translation overheads:
+\begin{itemize}
+    \item \textbf{Instruction Expansion:} x86\_64 CISC instructions are translated into ARM64 RISC instruction blocks. This instruction expansion averages a ratio of \num{1.6}$\times$--\num{2.2}$\times$, increasing instruction count and instruction cache (I-cache) pressure on the physical CPU core.
+    \item \textbf{Page Table Translation page splits:} macOS utilizes a \SI{16}{\kilo\byte} virtual page size, whereas standard Linux binaries expect \SI{4}{\kilo\byte} pages. The virtualized Linux kernel must run with \SI{4}{\kilo\byte} page mappings. The hypervisor must map these \SI{4}{\kilo\byte} guest pages onto \SI{16}{\kilo\byte} host page frames. When a guest page table walk crosses page boundaries, the hypervisor executes page-splitting stage-2 memory translations, triggering Translation Lookaside Buffer (TLB) misses and page walk serialization delays.
+    \item \textbf{System Call Interception:} System calls initiated by the containerized compiler process must trap to the guest kernel (Exception Level 0 to Exception Level 1 context switch), be intercepted by the hypervisor thread in user space (virtualization trap), translated to host ARM64 system calls, executed on the host macOS XNU kernel, and returned via the same path. This multi-level context-switching adds approximately \num{500} to \num{1000} CPU clock cycles per system call. In I/O-intensive pipelines that perform frequent small metadata writes, this trap latency dominates execution time.
+\end{itemize}
+
+The marginal cost of the strategy backend over the raw Docker CLI---measured at roughly \SI{0.18}{\second} per tool invocation (Section~\ref{subsec:overhead_analysis})---is the cost of programmatically orchestrating the Docker daemon socket, performing request/response marshalling, and logging \texttt{ContainerTelemetry} (JSON Lines) events inside the middleware layer, rather than of the container execution itself. Under emulation this floor rides on top of the per-cycle translation tax borne equally by both backends.
+
+\subsection{Argument-Contract Behavior under Command Chaining}
+\label{subsec:arg_contract}
+A property of the execution contract worth stating explicitly is how the strategy path handles a workload expressed as a chained shell string---for example an analyze-then-elaborate GHDL sequence joined with the \texttt{\&\&} operator (\texttt{ghdl -a \ldots \&\& ghdl -e \ldots}). A native shell interprets \texttt{\&\&} as sequential execution. The extension, however, does not execute through a shell: by design it constructs an argument vector \texttt{[executable, args\ldots]} and runs it directly (\texttt{UseShellExecute=false}, with \texttt{tini} as PID~1), so shell metacharacters are never reinterpreted and would occupy inert argument slots. The project's adversarial test suite (\texttt{CommandInjectionProofOfConceptTests}) verifies this property directly: payloads such as \texttt{\&\& touch SENTINEL} are forwarded as a single non-interpreted argument and never execute.
+
+As a secondary guard, the argument builder rejects arguments that embed command-substitution or command-separator constructs---command substitution (\texttt{\$(} and backtick), the boolean chain operators \texttt{\&\&} and \texttt{||}, and the statement separator \texttt{;} (the last exempted for Yosys, whose synthesis scripts legitimately use \texttt{;} as an intra-script command separator)---raising an \texttt{ArgumentException} rather than forwarding them. Note that a bare pipe \texttt{|} and I/O redirections are \emph{not} rejected by this guard: they are inert in the shell-less argument vector and never reach a shell, so they need no special handling. In a standalone process an unhandled \texttt{ArgumentException} surfaces as exit code \texttt{134} (\texttt{SIGABRT}, mapped to \texttt{-6}); within OneWare~Studio the same exception is caught by the tool engine and reported as a failed execution rather than terminating the IDE.
+
+The point of interest here is a property of the \emph{execution contract}, not a security result: because the path is shell-less, a multi-step workload must be expressed as an argument vector---or as separate invocations for compilation and elaboration---rather than as a chained shell string. This is why the harness's seven workloads are each single-tool argv dispatches (Section~\ref{subsec:construct_validity}), mirroring how OneWare drives the toolchain one tool per dispatch. A full threat-model treatment of the shell-less contract and the container-hardening defaults is deliberately out of scope for this thesis and is the subject of separate work.
+
+\subsection{Failure Analysis: the Named-Pipe Attach Defect}
+\label{subsec:npipe_defect}
+The un-emulated Windows run surfaced a defect in the shipped output-capture path that neither the macOS host nor the Linux-based continuous-integration matrix had exercised, illustrating the diagnostic value of the cross-platform measurement beyond its timing numbers. The strategy captures a container's \texttt{stdout}/\texttt{stderr} by attaching to it through the Docker SDK's \texttt{AttachContainerAsync}. That method requires a write-closable transport: it rejects any hijacked stream whose \texttt{CanCloseWrite} property is false, raising \texttt{NotSupportedException(\textquotedbl Cannot shutdown write on this transport\textquotedbl)}. The Windows named-pipe stream reports \texttt{CanCloseWrite == false}---a \texttt{NamedPipeClientStream} cannot half-close its write direction---so attach is unusable over the pipe, which is the default Docker~Desktop endpoint on Windows. The socket transports (the Unix-domain socket on macOS and Linux, and TCP) report \texttt{CanCloseWrite == true} and are unaffected. An initial Windows run therefore hit the defect the instant the strategy attached over the pipe; it was carried to completion over the Docker~Desktop TCP endpoint as a stop-gap while the defect was diagnosed and fixed.
+
+The root cause is that attach, a facility for bidirectional (stdin-carrying) streams, is stronger than this use requires: the strategy only ever reads output and never writes to a container's standard input. The corrected path exploits that asymmetry. On the named-pipe transport the extension now streams output through the log-follow endpoint (\texttt{GET /containers/\{id\}/logs} with \texttt{follow}), which returns the same multiplexed \texttt{stdout}/\texttt{stderr} framing, imposes no write-close requirement, and therefore works over the pipe; because that stream is opened after the container starts, automatic removal is disabled on this path so a fast-exiting container cannot be reaped before its output is drained, and the container is removed explicitly instead. The change is scoped strictly to the named-pipe transport---the socket path retains the attach mechanism unchanged---so the behavior measured on Machine~1 is preserved exactly. The corrected path was then validated end-to-end on the same native Windows host: with Docker~Desktop left at its default named-pipe endpoint, the strategy backend completed all eight workloads with every iteration returning exit code~0 and the \texttt{NotSupportedException} occurring nowhere. The Machine~3 figures in Table~\ref{tab:overhead_windows} are from that validated named-pipe run, and the corrected path is part of the released extension.
+
+\clearpage
+\subsection{Reliability and Host Isolation}
+The primary contribution under test is functional transparency: a tool invocation dispatched to the container strategy must yield the result the user would obtain natively. The reliability benefit of the hermetic container follows directly from this axis. Where a native toolchain is subject to local package drift---mismatched shared libraries, partially upgraded backends, or an absent tool entirely---the pre-configured image pins a known-good binary set, so a dispatch that would fail or hang natively completes deterministically inside the container. Across the seven-workload FPGA corpus every workload executes to success under both containerized backends (Table~\ref{tab:overhead_macos}), which is the reliability property realized: the container makes toolchain execution independent of the state of the host's package environment.
+
+\subsection{External Validity (Generalizability)}
+The Machine~1 figures are specific to the Apple Silicon host running under translation, but the extension's marginal cost no longer rests on that host alone. Machines~2 and~3 measured the same integration layer on native \texttt{x86\_64} hosts, where the image executes without Rosetta~2 translation, and found the same structure---a fixed, compute-independent dispatch floor (Sections~\ref{subsec:overhead_windows} and~\ref{subsec:overhead_linux})---confirming that this behavior is a property of the integration layer rather than of the emulated host. The container-versus-native factor $\alpha$ was likewise measured, on Machine~2, the one platform where native and container builds coincide, yielding $\alpha \approx 1$ (Section~\ref{subsec:native_baseline}); the overhead picture is therefore complete across all three hosts. What remains outside the measured scope is the emulated-regime multiplier on Apple Silicon---cited from the literature rather than isolated here---and cross-runtime generalization, left to future work.
+
+\subsection{Construct Validity}
+\label{subsec:construct_validity}
+The workload corpus consists of the real open-source FPGA flows the extension targets: iCE40 and ECP5 synthesis (Yosys), place-and-route (nextpnr) and bitstream packing (icepack, ecppack), plus Icarus~Verilog simulation. Each workload is a single-tool dispatch drawn from an end-to-end design flow, mirroring exactly how OneWare~Studio drives the toolchain one tool per invocation. Measuring these dispatches through the shipped \texttt{DockerExecutionStrategy} path---rather than a CLI approximation of it---ensures that the captured overhead reflects the real user-facing cost in OneWare~Studio.
