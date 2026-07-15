@@ -10,7 +10,7 @@
 
 > A modular, reflection-free, and Native-AOT compatible .NET 10 plug-in architecture for OneWare Studio, providing transparent, rootless containerized execution of heterogeneous open-source EDA toolchains (GHDL, Icarus, Verilator, Yosys, nextpnr) with dynamic native fallback capabilities.
 
-![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge)
 ![.NET 10](https://img.shields.io/badge/.NET_10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![LaTeX](https://img.shields.io/badge/LaTeX-008080?style=for-the-badge&logo=latex&logoColor=white)
