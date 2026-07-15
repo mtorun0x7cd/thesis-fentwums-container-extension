@@ -28,7 +28,7 @@ The plugin core is built with C# and targets .NET 10 with `IsAotCompatible` cons
 
 | Dimension | Detail |
 | :--- | :--- |
-| **Institution** | TH Köln (Cologne University of Applied Sciences) |
+| **Institution** | TH Köln (University of Applied Sciences) |
 | **Program** | Computer Science & Engineering (Technische Informatik) (M.Sc.) |
 | **Course** | Master's Thesis |
 | **Semester** | Summer Semester 2026 |
