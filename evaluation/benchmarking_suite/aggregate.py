@@ -244,7 +244,8 @@ def make_figures(data, fig_dir):
         ax.set_ylabel("Mean execution time (s)")
         ax.set_title(f"Containerized execution time — {plat} (95% CI)")
         fig.tight_layout()
-        fig.savefig(os.path.join(fig_dir, f"time_{plat}.png"), dpi=150)
+        # metadata: omit matplotlib's default "Software: Matplotlib …" PNG tag.
+        fig.savefig(os.path.join(fig_dir, f"time_{plat}.png"), dpi=150, metadata={"Software": None})
         plt.close(fig)
         made += 1
     return made
