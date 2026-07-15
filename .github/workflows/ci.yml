@@ -30,7 +30,8 @@ jobs:
     name: Build and Test LaTeX Documents
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/xu-cheng/texlive-full:20260401
+      # Digest-pinned for reproducibility (xu-cheng/texlive-full:latest as of 2026-07-02).
+      image: ghcr.io/xu-cheng/texlive-full@sha256:11383430b9a3e48c0b79339f34d8092f942f897d91ab3749d4899d06731fea7f
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -62,7 +63,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/xu-cheng/texlive-full:20260401
+      # Digest-pinned for reproducibility (xu-cheng/texlive-full:latest as of 2026-07-02).
+      image: ghcr.io/xu-cheng/texlive-full@sha256:11383430b9a3e48c0b79339f34d8092f942f897d91ab3749d4899d06731fea7f
     permissions:
       contents: write
     steps:
