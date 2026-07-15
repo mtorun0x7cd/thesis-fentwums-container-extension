@@ -30,7 +30,7 @@ GHDL `-a` / `-e` / `-r` stages. No synthesis backend is required.
 Open the project in OneWare Studio and run the simulation on `tb_full_adder`.
 A passing run prints:
 
-```
+```text
 tb_full_adder: PASS - 8 cases
 ```
 

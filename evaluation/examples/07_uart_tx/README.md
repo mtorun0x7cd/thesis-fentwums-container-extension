@@ -11,21 +11,21 @@ baud-rate pair.
 
 ## Interface
 
-| Port   | Dir | Width | Description                                              |
-|--------|-----|-------|----------------------------------------------------------|
-| `clk`  | in  | 1     | System clock; all state advances on its rising edge.     |
-| `rst`  | in  | 1     | Synchronous, active-high reset to the idle state.        |
-| `start`| in  | 1     | One-cycle pulse latches `data` and starts a frame.       |
-| `data` | in  | 8     | Payload byte, sampled when `start` is asserted.           |
-| `tx`   | out | 1     | Serial output; idles high, registered.                   |
-| `busy` | out | 1     | High for the duration of a frame; low when idle.         |
+| Port    | Dir | Width | Description                                          |
+|---------|-----|-------|------------------------------------------------------|
+| `clk`   | in  | 1     | System clock; all state advances on its rising edge. |
+| `rst`   | in  | 1     | Synchronous, active-high reset to the idle state.    |
+| `start` | in  | 1     | One-cycle pulse latches `data` and starts a frame.   |
+| `data`  | in  | 8     | Payload byte, sampled when `start` is asserted.      |
+| `tx`    | out | 1     | Serial output; idles high, registered.               |
+| `busy`  | out | 1     | High for the duration of a frame; low when idle.     |
 
 ### Parameters
 
-| Parameter  | Default   | Description                          |
-|------------|-----------|--------------------------------------|
-| `CLK_FREQ` | 1000000   | System clock frequency in Hz.        |
-| `BAUD`     | 115200    | Target baud rate.                    |
+| Parameter  | Default | Description                   |
+|------------|---------|-------------------------------|
+| `CLK_FREQ` | 1000000 | System clock frequency in Hz. |
+| `BAUD`     | 115200  | Target baud rate.             |
 
 ## Toolchain path
 
@@ -48,7 +48,7 @@ eight data bits, and the stop bit. On success it prints
 
 ### Standalone verification
 
-```
+```bash
 docker run --rm -v "$PWD":/work -w /work fentwums/oss-cad-suite:2026-06-30 \
   bash -lc 'iverilog -g2012 -o /tmp/tb.out uart_tx.v uart_tx_tb.sv && vvp /tmp/tb.out \
             && yosys -q -p "read_verilog -sv uart_tx.v; hierarchy -top uart_tx; proc; opt; check"'

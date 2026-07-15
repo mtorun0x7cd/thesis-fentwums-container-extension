@@ -51,7 +51,7 @@ load-over-shift precedence, and a mid-stream reset, then prints
 
 Standalone (matching the container flow):
 
-```
+```bash
 iverilog -g2012 -o /tmp/tb.out shift_register.v shift_register_tb.v
 vvp /tmp/tb.out
 yosys -q -p "read_verilog -sv shift_register.v; hierarchy -top shift_register; proc; opt; check"

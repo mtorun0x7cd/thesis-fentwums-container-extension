@@ -9,14 +9,14 @@ no storage.
 
 ## Interface
 
-| Port  | Dir | Width       | Description                  |
-|-------|-----|-------------|------------------------------|
-| `d0`  | in  | `WIDTH`     | Data input, selected by `sel=0` |
-| `d1`  | in  | `WIDTH`     | Data input, selected by `sel=1` |
-| `d2`  | in  | `WIDTH`     | Data input, selected by `sel=2` |
-| `d3`  | in  | `WIDTH`     | Data input, selected by `sel=3` |
-| `sel` | in  | 2           | Selector                     |
-| `y`   | out | `WIDTH`     | Selected data word           |
+| Port  | Dir | Width   | Description                     |
+|-------|-----|---------|---------------------------------|
+| `d0`  | in  | `WIDTH` | Data input, selected by `sel=0` |
+| `d1`  | in  | `WIDTH` | Data input, selected by `sel=1` |
+| `d2`  | in  | `WIDTH` | Data input, selected by `sel=2` |
+| `d3`  | in  | `WIDTH` | Data input, selected by `sel=3` |
+| `sel` | in  | 2       | Selector                        |
+| `y`   | out | `WIDTH` | Selected data word              |
 
 Parameter: `WIDTH` (default 8).
 

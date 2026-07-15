@@ -36,7 +36,7 @@ DUT against an independent reference model on every cycle and reports
 
 Standalone reproduction of the simulation:
 
-```
+```bash
 ghdl -a --std=08 counter.vhd counter_tb.vhd
 ghdl -e --std=08 counter_tb
 ghdl -r --std=08 counter_tb --assert-level=error

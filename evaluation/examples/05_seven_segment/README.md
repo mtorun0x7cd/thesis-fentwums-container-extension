@@ -9,9 +9,9 @@ and `d` glyphs are used so that they remain distinguishable from `8` and `0`.
 
 ## Interface
 
-| Port    | Direction | Width | Description                                                  |
-|---------|-----------|-------|--------------------------------------------------------------|
-| `digit` | in        | 4     | Hex code to display, `0x0`-`0xF`.                            |
+| Port    | Direction | Width | Description                                                 |
+|---------|-----------|-------|-------------------------------------------------------------|
+| `digit` | in        | 4     | Hex code to display, `0x0`-`0xF`.                           |
 | `seg`   | out       | 7     | Active-LOW segments, packed `g f e d c b a` (`seg(0)` = a). |
 
 Active-LOW: a driven `0` lights the segment (common anode tied high, cathode

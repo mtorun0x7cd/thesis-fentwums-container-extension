@@ -20,6 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Lint Markdown
-        # Lint the curated documentation; the evaluation/ tree carries generated
-        # result tables and example-project READMEs that are not brand-facing docs.
-        run: npx --yes markdownlint-cli2@0.23.0 "**/*.md" "!evaluation/**"
+        # Lint all authored Markdown. Only the machine-generated benchmark result
+        # tables under results/ are excluded — they are data artifacts emitted by
+        # the aggregation script, not hand-authored documentation.
+        run: npx --yes markdownlint-cli2@0.23.0 "**/*.md" "!evaluation/benchmarking_suite/results/**"
