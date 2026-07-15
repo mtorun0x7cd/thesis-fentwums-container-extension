@@ -2,7 +2,7 @@
     <defs>
         <!-- Filter for glow effect -->
         <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <dropShadow dx="0" dy="0" stdDeviation="12" flood-color="var(--accent-blue)" flood-opacity="var(--glow-opacity)"/>
+            <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="var(--accent)" flood-opacity="var(--glow-opacity)"/>
         </filter>
     </defs>
 
@@ -11,37 +11,29 @@
             --text-title: #0f172a;
             --text-subtitle: #475569;
             --text-badge: #475569;
-            --accent-blue: #4F46E5;
-            --accent-sky: #0ea5e9;
+            --accent: #2563eb;
             --badge-border: #cbd5e1;
             --glow-opacity: 0.05;
         }
         @media (prefers-color-scheme: dark) {
             :root {
                 --text-title: #ffffff;
-                --text-subtitle: #a0aec0;
-                --text-badge: #718096;
-                --accent-blue: #6366f1;
-                --accent-sky: #38bdf8;
-                --badge-border: #2C3E50;
+                --text-subtitle: #94a3b8;
+                --text-badge: #64748b;
+                --accent: #60a5fa;
+                --badge-border: #334155;
                 --glow-opacity: 0.25;
             }
         }
         .bg-border {
-            stroke: var(--accent-blue);
+            stroke: var(--accent);
             stroke-opacity: 0.15;
         }
-        .blue-stroke {
-            stroke: var(--accent-blue);
+        .accent-stroke {
+            stroke: var(--accent);
         }
-        .blue-fill {
-            fill: var(--accent-blue);
-        }
-        .sky-stroke {
-            stroke: var(--accent-sky);
-        }
-        .sky-fill {
-            fill: var(--accent-sky);
+        .accent-fill {
+            fill: var(--accent);
         }
         .text-title {
             fill: var(--text-title);
@@ -56,62 +48,61 @@
             fill: var(--text-badge);
         }
         .badge-rect-dev {
-            fill: var(--accent-blue);
+            fill: var(--accent);
             fill-opacity: 0.12;
-            stroke: var(--accent-blue);
+            stroke: var(--accent);
             stroke-opacity: 0.3;
         }
         .badge-rect-gh {
             stroke: var(--badge-border);
         }
         .divider {
-            stroke: var(--accent-blue);
+            stroke: var(--accent);
         }
     </style>
 
     <!-- Outer border/frame -->
     <rect x="20" y="20" width="1160" height="590" rx="16" fill="none" class="bg-border" stroke-width="2"/>
 
-    <!-- Centered Visual Icon group -->
+    <!-- Centered visual icon group: OneWare core bridging to a rootless container -->
     <g transform="translate(370, -105.5)" filter="url(#glow)">
-        <!-- Outer Box: Extension / System Frame -->
-        <rect x="130" y="215" width="200" height="200" rx="16" fill="none" class="blue-stroke" stroke-width="6"/>
-        
-        <!-- OneWare IDE Studio Core representation (Top Box) -->
-        <rect x="160" y="240" width="140" height="50" rx="6" fill="none" class="blue-stroke" stroke-width="4"/>
-        <line x1="175" y1="265" x2="285" y2="265" class="blue-stroke" stroke-width="3" stroke-linecap="round"/>
-        <line x1="175" y1="275" x2="245" y2="275" class="blue-stroke" stroke-width="3" stroke-linecap="round"/>
-        
-        <!-- Connection Arrow (Transparent Execution API) -->
-        <path d="M 230 290 L 230 335" fill="none" class="sky-stroke" stroke-width="4" stroke-linecap="round"/>
-        <path d="M 225 328 L 230 335 L 235 328" fill="none" class="sky-stroke" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-        
-        <!-- Container/Docker Environment representation (Bottom Box) -->
-        <rect x="160" y="340" width="140" height="50" rx="6" fill="none" class="sky-stroke" stroke-width="4"/>
-        <!-- Container slots/columns -->
-        <line x1="195" y1="340" x2="195" y2="390" class="sky-stroke" stroke-width="3"/>
-        <line x1="230" y1="340" x2="230" y2="390" class="sky-stroke" stroke-width="3"/>
-        <line x1="265" y1="340" x2="265" y2="390" class="sky-stroke" stroke-width="3"/>
+        <!-- Outer box: extension / system frame -->
+        <rect x="130" y="215" width="200" height="200" rx="16" fill="none" class="accent-stroke" stroke-width="6"/>
+
+        <!-- OneWare IDE core (top box) -->
+        <rect x="160" y="240" width="140" height="50" rx="6" fill="none" class="accent-stroke" stroke-width="4"/>
+        <line x1="175" y1="265" x2="285" y2="265" class="accent-stroke" stroke-width="3" stroke-linecap="round"/>
+        <line x1="175" y1="275" x2="245" y2="275" class="accent-stroke" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- Connection arrow (transparent execution API) -->
+        <path d="M 230 290 L 230 335" fill="none" class="accent-stroke" stroke-width="4" stroke-linecap="round"/>
+        <path d="M 225 328 L 230 335 L 235 328" fill="none" class="accent-stroke" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- Container / Docker environment (bottom box) -->
+        <rect x="160" y="340" width="140" height="50" rx="6" fill="none" class="accent-stroke" stroke-width="4"/>
+        <line x1="195" y1="340" x2="195" y2="390" class="accent-stroke" stroke-width="3"/>
+        <line x1="230" y1="340" x2="230" y2="390" class="accent-stroke" stroke-width="3"/>
+        <line x1="265" y1="340" x2="265" y2="390" class="accent-stroke" stroke-width="3"/>
     </g>
 
-    <!-- Centered information block (Text) -->
+    <!-- Centered information block (text) -->
     <g transform="translate(600, 360)">
-        <!-- Project Title -->
+        <!-- Project title -->
         <text x="0" y="30" font-family="'SF Pro Display', -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif" font-size="22" font-weight="900" letter-spacing="1.2" class="text-title" text-anchor="middle">ONEWARE CONTAINER EXTENSION</text>
-        
-        <!-- Center-aligned Divider line -->
+
+        <!-- Center-aligned divider line -->
         <line x1="-200" y1="65" x2="200" y2="65" class="divider" stroke-width="3" stroke-linecap="round"/>
-        
-        <!-- Tagline / Subtitle -->
+
+        <!-- Tagline / subtitle -->
         <text x="0" y="110" font-family="'SF Pro Text', -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif" font-size="16" font-weight="500" class="text-subtitle" letter-spacing="0.5" text-anchor="middle">Modular Integration of Containerized EDA Toolchains (Docker/Podman)</text>
 
-        <!-- Technical Domain Badge -->
+        <!-- Technical domain badge -->
         <g transform="translate(-187.5, 155)">
             <rect x="0" y="0" width="180" height="36" rx="8" class="badge-rect-dev" stroke-width="1.5"/>
             <text x="90" y="22" font-family="'SF Pro Text', -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif" font-size="12" font-weight="700" class="text-badge-dev" text-anchor="middle" letter-spacing="1">ACADEMIC WORK</text>
         </g>
 
-        <!-- GitHub Handle Badge -->
+        <!-- GitHub handle badge -->
         <g transform="translate(7.5, 155)">
             <rect x="0" y="0" width="180" height="36" rx="8" fill="none" class="badge-rect-gh" stroke-width="1.5"/>
             <text x="90" y="22" font-family="'SF Pro Text', -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif" font-size="12" font-weight="700" class="text-badge-gh" text-anchor="middle" letter-spacing="1">@mtorun0x7cd</text>

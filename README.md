@@ -1,8 +1,10 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/social_preview.svg?v=2&amp;theme=dark">
-  <source media="(prefers-color-scheme: light)" srcset="docs/social_preview.svg?v=2&amp;theme=light">
-  <img alt="Header" src="docs/social_preview.svg?v=2">
-</picture>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/social_preview_dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/social_preview_light.png" />
+    <img src="docs/social_preview_light.png" alt="OneWare Container Extension" width="880" />
+  </picture>
+</p>
 
 # OneWare Container Extension
 
@@ -72,7 +74,7 @@ The system coordinates the transparent bridging between the OneWare Studio IDE c
 ### Execution Flow Diagram
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#EEF2FF', 'edgeColor': '#4F46E5', 'primaryBorderColor': '#4F46E5', 'lineColor': '#4F46E5', 'textColor': '#1E1B4B' }}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#EFF6FF', 'edgeColor': '#2563EB', 'primaryBorderColor': '#2563EB', 'lineColor': '#2563EB', 'textColor': '#0F172A' }}}%%
 graph TD
     A[Start Tool Execution] --> B{Docker Socket Online?}
     B -->|Yes| C[Launch Rootless Container]
@@ -112,11 +114,12 @@ Future development of the OneWare Container Extension focuses on the following k
 - **Multi-Architecture Registry Manifests** — Querying Docker Registry Manifests to dynamically locate and download native `linux/arm64` images where available, avoiding Rosetta 2 or QEMU emulation overhead.
 - **Hardware-in-the-Loop (HIL) Forwarding** — Supporting containerized USB device forwarding (e.g., forwarding UART/FIFO FTDI controllers via `usbipd` or native device mounts) to execute on-target programmers like `openFPGALoader` directly from the container.
 
-## Contact & Profile
+## Contact
 
-**Mert Torun, M.Sc. (mtorun0x7cd)**  
-*IT Security Architect · Systems Engineer*  
-**mtorun0x7cd · Research & Development**
+**Mert Torun, M.Sc.** — IT Security Architect · Systems Engineer  
+mtorun0x7cd · Research & Development
+
+His work spans the verification and validation of safety-critical systems, infrastructure hardening, and cryptographic integrity, grounded in an M.Sc. in Computer Science & Engineering from TH Köln. This repository accompanies his master's thesis and its evaluation harness.
 
 - **Email**: [info@mtorun0x7cd.com](mailto:info@mtorun0x7cd.com)
 - **Website**: [mtorun0x7cd.com](https://mtorun0x7cd.com)
