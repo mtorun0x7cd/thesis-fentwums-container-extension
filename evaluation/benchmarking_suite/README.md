@@ -17,7 +17,7 @@ See [`../docs/evaluation.md`](../docs/evaluation.md) for the full methodology.
 ## Components
 
 | Script | Purpose |
-|---|---|
+| --- | --- |
 | `benchmark.py` | Single-workload driver: warmup, measured iterations, 95% Student-t confidence intervals, Welch unpaired and (interleaved) paired t-tests, Cohen's d, CV-adaptive repetition, full environment capture, separated image-pull cost, output-artifact hashing. |
 | `run_evaluation.py` | Cross-platform orchestrator over the fixed workload matrix (iCE40 and ECP5 synthesis, place-and-route, and pack, plus Verilog simulation). One command per machine. |
 | `aggregate.py` | Combines the per-platform results into `summary.csv`, `determinism.md` (cross-machine artifact-hash matrix), `summary.md`, and `figures/` (95% CI bar charts). |
