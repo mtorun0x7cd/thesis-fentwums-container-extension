@@ -114,6 +114,22 @@ Future development of the OneWare Container Extension focuses on the following k
 - **Multi-Architecture Registry Manifests** — Querying Docker Registry Manifests to dynamically locate and download native `linux/arm64` images where available, avoiding Rosetta 2 or QEMU emulation overhead.
 - **Hardware-in-the-Loop (HIL) Forwarding** — Supporting containerized USB device forwarding (e.g., forwarding UART/FIFO FTDI controllers via `usbipd` or native device mounts) to execute on-target programmers like `openFPGALoader` directly from the container.
 
+## Citation
+
+If you reference this work, please cite the thesis. Machine-readable metadata is in [CITATION.cff](CITATION.cff) (GitHub renders a "Cite this repository" control from it).
+
+> Torun, M. (2026). *Design and Implementation of a Modular Architecture for the Transparent Integration of Containerized Execution Environments for Heterogeneous Open-Source Binaries in OneWare Studio.* Master's thesis, TH Köln — University of Applied Sciences.
+
+## Security
+
+See [`SECURITY.md`](SECURITY.md) for the security stance and how to report issues.
+
+## License
+
+The work in this repository authored by Mert Torun — the thesis manuscript, the evaluation harness, and the benchmarking suite — is released under the [MIT License](LICENSE).
+
+> **Note on the pinned submodules.** `FEntwumS.ContainerExtension`, `FEntwumS.NetlistViewer`, `OneWare.GhdlExtension` and `OneWare` are referenced as pinned, read-only git submodules for building and reference. They are not redistributed here, and each retains its own upstream license, which differs from the above; consult the license file in each submodule.
+
 ## Contact
 
 **Mert Torun, M.Sc.** — IT Security Architect · Systems Engineer  
