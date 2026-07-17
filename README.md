@@ -91,13 +91,13 @@ graph TD
 
 | Component | Contents |
 | :--- | :--- |
-| `FEntwumS.ContainerExtension` | The extension under study, vendored as a pinned, read-only git submodule: the plug-in core, its unit tests, the Docker build inputs, and the DocFX site. |
+| `FEntwumS.ContainerExtension` | The extension under study, pinned as a read-only git submodule: the plug-in core, its unit tests, the Docker build inputs, and the DocFX site. |
 | `evaluation/harness` | `ContainerBenchmarkHarness` — drives a single tool through the real `DockerExecutionStrategy` (referenced via the submodule) for the overhead measurements. |
 | `evaluation/benchmarking_suite` | The Python evaluation pipeline (`benchmark.py`, `run_evaluation.py`, `aggregate.py`) and its per-platform results. |
 | `evaluation/integration` | Shell integration tests and HDL fixtures that drive the toolchain image directly. |
 | `evaluation/examples` | Eight FPGA example projects exercising the full synthesis-to-bitstream and simulation flows. |
 | `report` | The thesis manuscript (LaTeX). |
-| `OneWare`, `FEntwumS.NetlistViewer`, `OneWare.GhdlExtension` | Upstream OneWare and sibling extensions, vendored as submodules for building and reference. |
+| `OneWare`, `FEntwumS.NetlistViewer`, `OneWare.GhdlExtension` | Upstream OneWare and sibling extensions, pinned as submodules for building and reference. |
 
 ## Supported Container Runtimes
 
