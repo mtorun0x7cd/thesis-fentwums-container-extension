@@ -1,8 +1,8 @@
 # Contributing
 
-This repository holds an **actively maintained master's thesis** — the LaTeX
-manuscript, its evaluation harness, and the supporting example projects.
-Factual corrections that keep the record accurate are welcome.
+This repository holds a **submitted master's thesis**, maintained as its public
+record — the LaTeX manuscript, its evaluation harness, and the supporting
+example projects. Factual corrections that keep the record accurate are welcome.
 
 ## Reporting
 

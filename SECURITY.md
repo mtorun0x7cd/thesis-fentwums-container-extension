@@ -2,19 +2,20 @@
 
 ## Status
 
-This repository holds the source and compiled deliverables of an **active
-master's thesis** — the LaTeX manuscript and its evaluation harness. It is not a
-deployed software system: it builds LaTeX documents and drives a benchmark
-harness, and carries no runtime, no network service, and no hosted application.
+This repository holds the source of a **submitted master's thesis** — the LaTeX
+manuscript and its evaluation harness. The compiled document is a release asset
+and is not tracked here. It is not a deployed software system: it builds a LaTeX
+document and drives a benchmark harness, and carries no runtime, no network
+service, and no hosted application.
 
 ## Scope
 
 The repository contains the thesis manuscript (LaTeX, BibTeX/BibLaTeX), the
 evaluation pipeline (a Python benchmarking suite and a C# benchmark harness),
 shell integration tests, and FPGA example projects. The extension under study,
-`FEntwumS.ContainerExtension`, and the upstream OneWare components are vendored
-as pinned, read-only git submodules; their source is maintained upstream and is
-neither redistributed nor modified here. There are no credentials and no
+`FEntwumS.ContainerExtension`, and the upstream OneWare components are pinned as
+read-only git submodules; their source is maintained upstream and is neither
+redistributed nor modified here. There are no credentials and no
 network-facing component in this repository.
 
 ## Known limitations
