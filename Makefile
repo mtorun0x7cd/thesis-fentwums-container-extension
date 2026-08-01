@@ -6,7 +6,12 @@ ifeq ($(SUBMODULES_STATUS),missing)
 $(warning [WARNING] Git submodules do not appear to be initialized. Run: git submodule update --init --recursive)
 endif
 
-.PHONY: all report slides paper handout clean
+# The paper, slides and handout sources are kept out of the published tree (see
+# .gitignore), so their targets are generated only where the directory is
+# present. A clone therefore offers no target it cannot build.
+SECONDARY_DOCS := $(wildcard slides paper handout)
+
+.PHONY: all report clean $(SECONDARY_DOCS)
 
 # Toolchain Configuration
 LATEXMK := latexmk
@@ -20,7 +25,7 @@ PDFDIR := .tmp.nosync/pdf
 export SOURCE_DATE_EPOCH ?= $(shell git log -1 --pretty=%ct 2>/dev/null || date +%s)
 export FORCE_SOURCE_DATE = 1
 
-all: report $(wildcard slides paper handout)
+all: report $(SECONDARY_DOCS)
 
 report:
 	mkdir -p $(OUT)/report/chapters $(OUT)/report/appendices $(PDFDIR)
@@ -29,38 +34,24 @@ report:
 	cp $(OUT)/report/main.pdf $(PDFDIR)/main.pdf
 	@echo "Report build complete. Final PDF is in $(PDFDIR)/main.pdf"
 
-slides:
-	mkdir -p $(OUT)/slides $(PDFDIR)
-	@echo "Compiling slides/slides.tex..."
-	cd slides && $(LATEXMK) -norc -pdf -interaction=nonstopmode -file-line-error -synctex=1 -outdir=../$(OUT)/slides slides.tex
-	cp $(OUT)/slides/slides.pdf $(PDFDIR)/slides.pdf
-	@echo "Slides build complete. Final PDF is in $(PDFDIR)/slides.pdf"
-
-paper:
-	mkdir -p $(OUT)/paper $(PDFDIR)
-	@echo "Compiling paper/paper.tex..."
-	cd paper && $(LATEXMK) -norc -pdf -interaction=nonstopmode -file-line-error -synctex=1 -outdir=../$(OUT)/paper paper.tex
-	cp $(OUT)/paper/paper.pdf $(PDFDIR)/paper.pdf
-	@echo "Paper build complete. Final PDF is in $(PDFDIR)/paper.pdf"
-
-handout:
-	mkdir -p $(OUT)/handout $(PDFDIR)
-	@echo "Compiling handout/handout.tex..."
-	cd handout && $(LATEXMK) -norc -pdf -interaction=nonstopmode -file-line-error -synctex=1 -outdir=../$(OUT)/handout handout.tex
-	cp $(OUT)/handout/handout.pdf $(PDFDIR)/handout.pdf
-	@echo "Handout build complete. Final PDF is in $(PDFDIR)/handout.pdf"
+# One recipe for every secondary document: each builds <dir>/<dir>.tex.
+$(SECONDARY_DOCS):
+	mkdir -p $(OUT)/$@ $(PDFDIR)
+	@echo "Compiling $@/$@.tex..."
+	cd $@ && $(LATEXMK) -norc -pdf -interaction=nonstopmode -file-line-error -synctex=1 -outdir=../$(OUT)/$@ $@.tex
+	cp $(OUT)/$@/$@.pdf $(PDFDIR)/$@.pdf
+	@echo "Build complete. Final PDF is in $(PDFDIR)/$@.pdf"
 
 clean:
 	@echo "Cleaning ephemeral LaTeX artifacts..."
 	-cd report && $(LATEXMK) -norc -r latexmk.conf -C -outdir=../$(OUT)/report main.tex
-	-cd slides && $(LATEXMK) -norc -C -outdir=../$(OUT)/slides slides.tex
-	-cd paper && $(LATEXMK) -norc -C -outdir=../$(OUT)/paper paper.tex
-	-cd handout && $(LATEXMK) -norc -C -outdir=../$(OUT)/handout handout.tex
+	@for d in $(SECONDARY_DOCS); do (cd "$$d" && $(LATEXMK) -norc -C -outdir="../$(OUT)/$$d" "$$d.tex") || true; done
 	rm -rf $(OUT) $(PDFDIR)
 	@echo "Removing stray root PDF files..."
-	rm -f report/main.pdf main.pdf slides/slides.pdf slides.pdf paper/paper.pdf paper.pdf handout/handout.pdf handout.pdf
+	rm -f report/main.pdf main.pdf
+	@for d in $(SECONDARY_DOCS); do rm -f "$$d/$$d.pdf" "$$d.pdf"; done
 	@echo "Cleaning auxiliary files in the document directories..."
-	find report $(wildcard paper slides handout) -type f \( \
+	find report $(SECONDARY_DOCS) -type f \( \
 		-name "*.aux" -o -name "*.log" -o -name "*.out" -o -name "*.toc" -o \
 		-name "*.bbl" -o -name "*.blg" -o -name "*.fdb_latexmk" -o -name "*.fls" -o \
 		-name "*.synctex.gz" -o -name "*.synctex(busy)" -o -name "*.acn" -o -name "*.acr" -o \
