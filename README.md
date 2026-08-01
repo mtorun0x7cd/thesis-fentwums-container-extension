@@ -126,9 +126,11 @@ See [`SECURITY.md`](SECURITY.md) for the security stance and how to report issue
 
 ## License
 
-The work in this repository authored by Mert Torun — the thesis manuscript, the evaluation harness, and the benchmarking suite — is released under the [MIT License](LICENSE).
+The work in this repository authored by Mert Torun — the thesis manuscript, the evaluation harness, and the benchmarking suite — is released under the [MIT License](LICENSE). See [NOTICE](NOTICE) for attribution and third-party licenses.
 
 > **Note on the pinned submodules.** `FEntwumS.ContainerExtension`, `FEntwumS.NetlistViewer`, `OneWare.GhdlExtension` and `OneWare` are referenced as pinned, read-only git submodules for building and reference. They are not redistributed here, and each retains its own upstream license, which differs from the above; consult the license file in each submodule.
+>
+> **Note on the university mark.** `report/figures/th_logo.pdf` is the corporate mark of TH Köln, reproduced on the thesis title page. It remains the property of TH Köln and is not covered by the license above.
 
 ## Contact
 

@@ -1,0 +1,19 @@
+thesis-fentwums-container-extension -- NOTICE
+
+Copyright (c) 2026 Mert Torun, M.Sc. (mtorun0x7cd) <info@mtorun0x7cd.com>
+
+The works authored by Mert Torun in this repository -- the thesis manuscript,
+the evaluation harness, the benchmarking suite, the integration tests and the
+example projects -- are licensed under the MIT License. The full license text is
+in the LICENSE file.
+
+Third-party material is licensed separately and is NOT covered by that license:
+
+  - report/figures/th_logo.pdf -- the corporate mark of TH Köln, reproduced on
+    the thesis title page. It remains the property of TH Köln and is not
+    licensed for reuse under the terms above.
+
+  - FEntwumS.ContainerExtension, FEntwumS.NetlistViewer, OneWare.GhdlExtension
+    and OneWare -- pinned as read-only git submodules for building and
+    reference. Their source is maintained upstream and is not redistributed
+    here; each retains its own upstream license.
