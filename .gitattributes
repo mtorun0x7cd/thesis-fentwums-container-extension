@@ -23,6 +23,7 @@
 
 # ── Shell / Config ───────────────────────────────────────────────────────────
 *.sh        text eol=lf
+.chktexrc   text
 .editorconfig text
 .gitignore  text
 .gitmodules text

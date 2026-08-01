@@ -1,4 +1,13 @@
-# OneWare Container Extension - Deterministic Build Script
+# OneWare Container Extension - deterministic build
+#
+# Targets:
+#   make all      build the report, plus any secondary document present locally
+#   make report   build the thesis manuscript only
+#   make check    run ChkTeX over the manuscript (fails on any warning)
+#   make clean    remove build artefacts
+
+SHELL       := /bin/bash
+.SHELLFLAGS := -euo pipefail -c
 
 # Check if submodules are initialized
 SUBMODULES_STATUS := $(shell if [ ! -d "OneWare/src" ] && [ ! -f "OneWare/LICENSE" ]; then echo "missing"; fi)
@@ -11,42 +20,61 @@ endif
 # present. A clone therefore offers no target it cannot build.
 SECONDARY_DOCS := $(wildcard slides paper handout)
 
-.PHONY: all report clean $(SECONDARY_DOCS)
+.PHONY: all report check clean $(SECONDARY_DOCS)
 
 # Toolchain Configuration
 LATEXMK := latexmk
+
+# biber is overridable for platforms where the TeX Live universal binary fails
+# to self-extract ("extracting arm64 binary with lipo failed" on Apple silicon):
+#   make BIBER=/opt/homebrew/bin/biber
+BIBER ?= biber
 
 # All build artifacts and final PDFs live under .tmp.nosync (iCloud-excluded via
 # the .nosync suffix, git-ignored, never committed; CI rebuilds them on demand).
 OUT    := .tmp.nosync/latex
 PDFDIR := .tmp.nosync/pdf
 
-# Enforce deterministic, reproducible builds
-export SOURCE_DATE_EPOCH ?= $(shell git log -1 --pretty=%ct 2>/dev/null || date +%s)
-export FORCE_SOURCE_DATE = 1
+# Enforce deterministic, reproducible builds. Outside a git checkout the epoch
+# falls back to 0 rather than the wall clock, so the output stays reproducible.
+export SOURCE_DATE_EPOCH ?= $(shell git log -1 --pretty=%ct 2>/dev/null || echo 0)
+export FORCE_SOURCE_DATE := 1
 
 all: report $(SECONDARY_DOCS)
 
-report:
-	mkdir -p $(OUT)/report/chapters $(OUT)/report/appendices $(PDFDIR)
+# Order-only: the directories must exist, but their mtime must not age the
+# targets that write into them.
+$(OUT) $(PDFDIR):
+	mkdir -p "$@"
+
+report: | $(OUT) $(PDFDIR)
+	mkdir -p "$(OUT)/report/chapters" "$(OUT)/report/appendices"
 	@echo "Compiling report/main.tex (LuaLaTeX + fontspec)..."
-	cd report && $(LATEXMK) -norc -r latexmk.conf -outdir=../$(OUT)/report main.tex
-	cp $(OUT)/report/main.pdf $(PDFDIR)/main.pdf
+	cd report && $(LATEXMK) -norc -r latexmk.conf -e '$$biber=q{$(BIBER) %O %S}' -outdir="../$(OUT)/report" main.tex
+	cp "$(OUT)/report/main.pdf" "$(PDFDIR)/main.pdf"
 	@echo "Report build complete. Final PDF is in $(PDFDIR)/main.pdf"
 
 # One recipe for every secondary document: each builds <dir>/<dir>.tex.
-$(SECONDARY_DOCS):
-	mkdir -p $(OUT)/$@ $(PDFDIR)
+$(SECONDARY_DOCS): | $(OUT) $(PDFDIR)
+	mkdir -p "$(OUT)/$@"
 	@echo "Compiling $@/$@.tex..."
-	cd $@ && $(LATEXMK) -norc -pdf -interaction=nonstopmode -file-line-error -synctex=1 -outdir=../$(OUT)/$@ $@.tex
-	cp $(OUT)/$@/$@.pdf $(PDFDIR)/$@.pdf
+	cd "$@" && $(LATEXMK) -norc -pdf -interaction=nonstopmode -file-line-error -synctex=1 -outdir="../$(OUT)/$@" "$@.tex"
+	cp "$(OUT)/$@/$@.pdf" "$(PDFDIR)/$@.pdf"
 	@echo "Build complete. Final PDF is in $(PDFDIR)/$@.pdf"
+
+# The manuscript only. report/setup/ holds package and listings configuration
+# whose literal delimiters and unbalanced braces are deliberate, not prose to be
+# linted; the suppressions that do apply are documented in .chktexrc. ChkTeX
+# exits non-zero on any surviving warning, which is what makes this a gate.
+check:
+	find report -name '*.tex' -not -path 'report/setup/*' -not -path '*/.tmp.nosync/*' \
+		-exec chktex -q -I0 -l .chktexrc {} +
 
 clean:
 	@echo "Cleaning ephemeral LaTeX artifacts..."
-	-cd report && $(LATEXMK) -norc -r latexmk.conf -C -outdir=../$(OUT)/report main.tex
+	-cd report && $(LATEXMK) -norc -r latexmk.conf -C -outdir="../$(OUT)/report" main.tex
 	@for d in $(SECONDARY_DOCS); do (cd "$$d" && $(LATEXMK) -norc -C -outdir="../$(OUT)/$$d" "$$d.tex") || true; done
-	rm -rf $(OUT) $(PDFDIR)
+	rm -rf "$(OUT)" "$(PDFDIR)"
 	@echo "Removing stray root PDF files..."
 	rm -f report/main.pdf main.pdf
 	@for d in $(SECONDARY_DOCS); do rm -f "$$d/$$d.pdf" "$$d.pdf"; done

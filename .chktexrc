@@ -1,0 +1,32 @@
+# ChkTeX configuration for the thesis manuscript.
+#
+# Every suppression below names the construct in *this* document that makes the
+# rule systematically wrong here; anything not listed stays active, so the lint
+# is a real gate rather than a formality. Rule numbers are documented in the
+# ChkTeX manual: https://www.nongnu.org/chktex/ChkTeX.pdf
+#
+# The lint covers the manuscript only. report/setup/ holds package and listings
+# configuration whose literal delimiters and unbalanced braces are the point,
+# not prose to be checked; see the `check` target in the Makefile.
+
+CmdLine
+{
+    -n1   # \slash and \textbackslash need the terminating space; TeX consumes it
+    -n8   # `--' is deliberate in name compounds (Holm--Bonferroni) and ranges
+    -n12  # sentences here legitimately end on an abbreviation
+    -n13  # acronym-final sentences (a deprivileged VM.) are pervasive
+    -n24  # \label{} on its own line after a sectioning command is the house style
+    -n26  # tokens that begin with a period (.NET, .otf) are names, not punctuation
+    -n29  # hexadecimal literals (0x5555) are not multiplications
+    -n36  # function names carry their own parentheses: socket(), connect()
+    -n38  # quotation punctuation follows the convention used throughout the text
+}
+
+# Literal code, identifiers and paths are not prose. Without this, every
+# \texttt{unix://...}, \texttt{socket()} and \texttt{\$(} raises an ellipsis,
+# spacing or brace-balance warning that would be wrong to "fix".
+WipeArg
+{
+    \path:{}
+    \texttt:{}
+}
