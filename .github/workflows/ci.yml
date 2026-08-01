@@ -38,13 +38,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Lint LaTeX documents
-        run: |
-          chktex -q -v0 report/main.tex || true
-
+      # bash is required by the Makefile's pinned SHELL; the texlive image is
+      # Alpine and ships only BusyBox ash.
       - name: Install system dependencies
         run: |
-          apk add --no-cache make git python3
+          apk add --no-cache bash make git python3
+
+      - name: Lint LaTeX documents
+        run: make check
 
       - name: Compile LaTeX documents
         run: |
@@ -75,7 +76,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          apk add --no-cache make git python3
+          apk add --no-cache bash make git python3
 
       - name: Compile release deliverables
         run: |
