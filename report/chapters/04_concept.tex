@@ -26,7 +26,7 @@
 This chapter details the conceptual model and architectural design of the OneWare Container Extension. The system is designed to provide transparent containerization of heterogeneous EDA toolchains while maintaining local execution fallbacks, high-performance structured diagnostics, and strict security boundaries.
 
 \section{The Hybrid Strategy Pattern}
-To address the challenge of runtime execution flexibility (RQ1), the extension implements a modified version of the Gang-of-Four Strategy Pattern \cite{gamma1994design}, termed the \textit{Hybrid Strategy Pattern}. 
+To address the challenge of runtime execution flexibility (RQ1), the extension implements a modified version of the Gang-of-Four Strategy Pattern~\cite{gamma1994design}, termed the \textit{Hybrid Strategy Pattern}. 
 
 In standard IDE plugin architectures, a tool execution strategy is statically bound to a specific tool. Under the Hybrid Strategy Pattern, the execution layer dynamically selects the optimal execution provider at runtime based on environmental conditions and user-configured preferences. Figure~\ref{fig:strategy_pattern} shows the resulting structure, in which a single dispatcher realizes the strategy interface and internally routes each invocation to either the container path or a native-fallback path.
 
@@ -139,8 +139,8 @@ The connection layer automatically checks:
 \subsection{Rootless File Permissions and User-ID Injection}
 A major architectural issue with containerized execution is file ownership. On Linux hosts, the standard Docker daemon runs as the root user. Consequently, files compiled inside the container (such as synthesis netlists or log outputs) are written back to the host filesystem with root ownership, blocking the local developer from modifying or deleting them without administrative privileges.
 
-To guarantee zero-privilege execution and correct file ownership, the architecture implements dynamic host User ID (UID) and Group ID (GID) injection for rootful container runs \cite{sultan2019containers}.
-Operating-system-level virtualization relies on user namespaces to isolate user and group ID mappings \cite{kerrisk2013namespaces}. A user namespace is instantiated by calling the \texttt{clone} system call with the \texttt{CLONE\_NEWUSER} flag. Upon creation, the process inside the new user namespace is granted a full set of capabilities (such as \texttt{CAP\_SYS\_ADMIN}, \texttt{CAP\_NET\_ADMIN}, and \texttt{CAP\_SYS\_CHROOT}) but only within its namespace boundary. To map these namespace-internal user accounts back to host accounts, the parent process configures the map files at \texttt{/proc/[PID]/uid\_map} and \texttt{/proc/[PID]/gid\_map}.
+To guarantee zero-privilege execution and correct file ownership, the architecture implements dynamic host User ID (UID) and Group ID (GID) injection for rootful container runs~\cite{sultan2019containers}.
+Operating-system-level virtualization relies on user namespaces to isolate user and group ID mappings~\cite{kerrisk2013namespaces}. A user namespace is instantiated by calling the \texttt{clone} system call with the \texttt{CLONE\_NEWUSER} flag. Upon creation, the process inside the new user namespace is granted a full set of capabilities (such as \texttt{CAP\_SYS\_ADMIN}, \texttt{CAP\_NET\_ADMIN}, and \texttt{CAP\_SYS\_CHROOT}) but only within its namespace boundary. To map these namespace-internal user accounts back to host accounts, the parent process configures the map files at \texttt{/proc/[PID]/uid\_map} and \texttt{/proc/[PID]/gid\_map}.
 
 However, writing to these map files from an unprivileged process is restricted. To allow unprivileged users to map multiple host UIDs, the system utilizes SetUID helper binaries: \texttt{newuidmap} and \texttt{newgidmap}. These utilities query the configuration files \texttt{/etc/subuid} and \texttt{/etc/subgid}.
 A typical entry in \texttt{/etc/subuid} is formatted as:

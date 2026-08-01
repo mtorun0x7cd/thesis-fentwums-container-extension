@@ -24,7 +24,7 @@
 \label{ch:stateoftheart}
 
 \section{The Target Ecosystem: OneWare Studio}
-OneWare Studio is a modern, cross-platform Integrated Development Environment (IDE) for FPGA development, built on the .NET 10 framework and Avalonia UI \cite{dotnet10}. \textbf{Reproducibility} across heterogeneous machines---student laptops and CI servers alike---is a recognized requirement for collaborative and educational EDA workflows \cite{boettiger2015introduction}. Unlike textual editors (e.g., Vim, Sublime), OneWare provides rich semantic features (LSP, Diagramming) that require low-latency interaction with the underlying toolchain.
+OneWare Studio is a modern, cross-platform Integrated Development Environment (IDE) for FPGA development, built on the .NET 10 framework and Avalonia UI~\cite{dotnet10}. \textbf{Reproducibility} across heterogeneous machines---student laptops and CI servers alike---is a recognized requirement for collaborative and educational EDA workflows~\cite{boettiger2015introduction}. Unlike textual editors (e.g., Vim, Sublime), OneWare provides rich semantic features (LSP, Diagramming) that require low-latency interaction with the underlying toolchain.
 \section{Analysis of Existing Solutions}
 To contextualize the proposed architecture, we analyze five existing approaches to environment management in EDA: Package Managers (FuseSoC), Functional Package Managers (Nix/Guix), Build System Generators (SiliconCompiler), Full-IDE Virtualization (DevContainers), and toolchain-managing IDE Extensions (TerosHDL).
 
@@ -36,7 +36,7 @@ To contextualize the proposed architecture, we analyze five existing approaches 
 \end{itemize}
 
 \subsection{Functional Package Managers (Nix/Guix)}
-Functional Package Managers (FPMs), such as Nix and GNU Guix, represent a paradigm shift in environment reproducibility by modeling software builds as pure, mathematical functions \cite{courtes2013functional}.
+Functional Package Managers (FPMs), such as Nix and GNU Guix, represent a paradigm shift in environment reproducibility by modeling software builds as pure, mathematical functions~\cite{courtes2013functional}.
 \begin{itemize}
     \item \textbf{Mechanism:} Under this paradigm, every build input---including source files, compilation flags, compiler versions, and the transitive dependency graph---is cryptographically hashed to produce a unique, immutable store path (such as \path{/nix/store/h1a2b3c4...}\allowbreak\path{-yosys-0.9}). Divergent environments coexist without interference, eliminating dependency conflicts at the filesystem level. GNU Guix extends this by using G-expressions in Scheme for deeply integrated code staging.
     \item \textbf{Reproducibility rate:} Large-scale empirical studies on the nixpkgs repository evaluated over \num{709816} historical packages, validating a rebuildability rate exceeding \SI{99}{\percent} and a bitwise reproducibility rate between \SI{69}{\percent} and \SI{91}{\percent}~\cite{Malka2025DoesFunctional}. Scale monitoring is achieved via decentralized architectures like Lila~\cite{Malka2026Lila}.
@@ -44,7 +44,7 @@ Functional Package Managers (FPMs), such as Nix and GNU Guix, represent a paradi
 \end{itemize}
 
 \subsection{Build System Generators (SiliconCompiler)}
-Tools like \textit{SiliconCompiler} \cite{siliconcompiler} utilize Python scripts to abstract the toolchain complexity. 
+Tools like \textit{SiliconCompiler}~\cite{siliconcompiler} utilize Python scripts to abstract the toolchain complexity. 
 \begin{itemize}
     \item \textbf{Mechanism:} Input HDL $\rightarrow$ Python Script $\rightarrow$ Execution Graph $\rightarrow$ Bitstream.
     \item \textbf{Critique (Execution Opacity):} They operate as blocking CLI wrappers. These abstractions enforce a rigid execution graph and obscure underlying compilation telemetry until termination. This opaque execution model degrades the IDE experience (RQ2), as the IDE cannot easily parse real-time errors or interject during the build process.
@@ -58,7 +58,7 @@ Microsoft's VS Code \textit{DevContainers} extension allows developers to open a
 \end{itemize}
 
 \subsection{IDE Extensions (TerosHDL)}
-\textit{TerosHDL} \cite{teroshdl} is a VS Code extension that attempts to manage toolchains.
+\textit{TerosHDL}~\cite{teroshdl} is a VS Code extension that attempts to manage toolchains.
 \begin{itemize}
     \item \textbf{Weakness:} It relies on static provisioning (downloading pre-built binaries) and platform-dependent shell scripts. This often breaks on Windows (Git Bash vs PowerShell) and lacks the hermetic guarantees of containers (RQ1).
 \end{itemize}
