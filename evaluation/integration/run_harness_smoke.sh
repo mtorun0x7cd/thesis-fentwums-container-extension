@@ -36,11 +36,29 @@ while [[ $# -gt 0 ]]; do
 done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EVALUATION_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-HARNESS_CSPROJ="$REPO_ROOT/src/ContainerBenchmarkHarness/ContainerBenchmarkHarness.csproj"
+
+# This repository vendors the extension sources under FEntwumS.ContainerExtension/ and keeps
+# the evaluation code beside them under evaluation/. Both directories are named once here and
+# every project path is derived from them, so the layout stays visible in a single place.
+PROJECT_DIR="$REPO_ROOT/FEntwumS.ContainerExtension"
+SOLUTION="$PROJECT_DIR/OneWare.ContainerExtension.slnx"
+UNIT_TESTS_CSPROJ="$PROJECT_DIR/tests/ContainerExtension.UnitTests/ContainerExtension.UnitTests.csproj"
+HARNESS_CSPROJ="$EVALUATION_DIR/harness/ContainerBenchmarkHarness.csproj"
+
 VHDL_DIR="$SCRIPT_DIR/VHDL_Blink"
 VERILOG_DIR="$SCRIPT_DIR/Verilog_Blink"
 REPORT_FILE="$SCRIPT_DIR/harness_smoke_report.md"
+
+# Fail early and by name if the layout moves. A phase started with a wrong path fails deep
+# inside dotnet, where the message no longer names the file that was not found.
+for required_path in "$SOLUTION" "$UNIT_TESTS_CSPROJ" "$HARNESS_CSPROJ" "$VHDL_DIR" "$VERILOG_DIR"; do
+    if [ ! -e "$required_path" ]; then
+        echo -e "${RED}Missing required path: $required_path${NC}" >&2
+        exit 1
+    fi
+done
 
 START_TIME=$SECONDS
 {
@@ -74,10 +92,13 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 if [ "$RUN_BUILD" = true ]; then
-    run_phase "1" "Build solution" "dotnet build \"$REPO_ROOT/OneWare.ContainerExtension.slnx\" -c Debug"
+    # The harness is not a member of the solution, so building the solution alone leaves it
+    # without output and every later --no-build phase fails. It is built as its own phase.
+    run_phase "1a" "Build solution" "dotnet build \"$SOLUTION\" -c Debug"
+    run_phase "1b" "Build harness" "dotnet build \"$HARNESS_CSPROJ\" -c Debug"
 fi
 if [ "$RUN_UNIT" = true ]; then
-    run_phase "2" "Unit tests" "dotnet test \"$REPO_ROOT/tests/ContainerExtension.UnitTests/ContainerExtension.UnitTests.csproj\" -c Debug --no-build"
+    run_phase "2" "Unit tests" "dotnet test \"$UNIT_TESTS_CSPROJ\" -c Debug --no-build"
 fi
 if [ "$RUN_STRESS" = true ]; then
     run_phase "3" "Telemetry stress" "dotnet run --project \"$HARNESS_CSPROJ\" --no-build -c Debug -- stress-telemetry --processes 2 --threads 4 --iterations 50"
