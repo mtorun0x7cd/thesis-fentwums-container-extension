@@ -33,4 +33,10 @@ preferred-citation:
   year: 2026
   institution:
     name: "TH Köln -- University of Applied Sciences"
-  # Master's thesis. Persistent URN/DOI to be added once assigned by the TH Köln institutional repository.
+  thesis-type: "Master's thesis"
+  doi: 10.57683/EPUB-3597
+  url: https://epb.bibl.th-koeln.de/frontdoor/index/index/docId/3597
+  identifiers:
+    - type: other
+      value: "urn:nbn:de:hbz:832-epub4-35974"
+      description: "Persistent URN in the TH Köln institutional repository"

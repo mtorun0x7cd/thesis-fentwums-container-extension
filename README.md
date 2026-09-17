@@ -33,7 +33,7 @@ The plugin core is built with C# and targets .NET 10 with `IsAotCompatible` cons
 | **Course** | Master's Thesis |
 | **Semester** | Summer Semester 2026 |
 | **Type** | Individual project |
-| **ePublications** | Thesis to be archived in TH Köln's [institutional repository](https://epb.bibl.th-koeln.de/); persistent URN/DOI added once assigned |
+| **ePublications** | Archived in TH Köln's [institutional repository](https://epb.bibl.th-koeln.de/frontdoor/index/index/docId/3597), open access under CC BY 4.0 — DOI [10.57683/EPUB-3597](https://doi.org/10.57683/EPUB-3597), URN `urn:nbn:de:hbz:832-epub4-35974` |
 
 ## Features
 
