@@ -41,11 +41,11 @@ After the tag `epub-3597`, the text of the thesis changes only through [`ERRATA.
    sha256sum deposited.pdf
    ```
 
-3. The release `epub-3597` carries the file and `SHA256SUMS` as assets. The public REST API gives the SHA-256 of each asset, which must equal `SHA256SUMS`:
+3. The release `epub-3597` carries the file and `SHA256SUMS` as assets. The public REST API reports a digest for each asset. Written in hexadecimal without any algorithm prefix, as the command below prints it, the digest of the PDF must equal its line in `SHA256SUMS`:
 
    ```sh
    curl -sSf https://api.github.com/repos/mtorun0x7cd/thesis-fentwums-container-extension/releases/tags/epub-3597 \
-     | jq -r '.assets[] | "\(.digest)  \(.name)"'
+     | jq -r '.assets[] | "\(.digest | sub("^[^:]*:"; ""))  \(.name)"'
    ```
 
 ### With plain git
