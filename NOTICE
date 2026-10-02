@@ -42,14 +42,20 @@ licence texts are in LICENSES/.
                                   adapted from the project templates of
                                   OneWare Studio (section 3).
 
-  thesis/latexmk.conf, Makefile,  MIT. Build files, scripts and configuration.
-  scripts/, the dotfiles          Copyright 2026 Mert Torun.
+  thesis/latexmk.conf, Makefile,  MIT. Build files, scripts, workflows and
+  scripts/, .github/, .githooks/, configuration. Copyright 2026 Mert Torun.
+  the dotfiles,
+  docs/social/render.sh
 
-  NOTICE, CITATION.cff,           CC BY 4.0. Documentation and metadata;
-  codemeta.json,                  CITATION.cff and codemeta.json quote the
-  publication/README.md,          abstract of the thesis. Copyright 2026
-  evaluation/docs/, the README    Mert Torun.
-  files under evaluation/
+  README.md, CHANGELOG.md,        CC BY 4.0. Documentation and metadata; the
+  ERRATA.md, SECURITY.md,         README, CITATION.cff and codemeta.json quote
+  CONTRIBUTING.md, NOTICE,        the abstract of the thesis. Copyright 2026
+  CITATION.cff, codemeta.json,    Mert Torun.
+  publication/README.md,
+  evaluation/README.md,
+  evaluation/docs/, the README
+  files under evaluation/,
+  docs/social/social-card.*
 
   FEntwumS.ContainerExtension/,   Not part of this repository's files. Each
   OneWare/,                       is a git submodule pinned at a commit of its

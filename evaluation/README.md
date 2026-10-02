@@ -131,7 +131,7 @@ To check that the committed tables follow from the committed raw results, withou
 make aggregate-check
 ```
 
-`summary.md` and `determinism.md` come out byte-identical and `summary.csv` identical up to its line endings: the csv module writes CRLF, and the repository stores LF.
+The check runs in two steps. [`scripts/check_result_statistics.py`](../scripts/check_result_statistics.py) recomputes the `statistics` and `comparison` blocks of every result file from the per-iteration times stored in it, with the functions of the committed `benchmark.py`; all 96 blocks of the 24 files are reproduced, within the last bit of a floating-point number, and every recorded iteration returned exit code 0. `aggregate.py` then writes the tables from the result files into the build folder: `summary.md` and `determinism.md` come out byte-identical with the committed ones, and `summary.csv` identical up to its line endings, because the csv module writes CRLF and the repository stores LF.
 
 ## Limits
 
