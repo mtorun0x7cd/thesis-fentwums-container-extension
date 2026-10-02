@@ -152,7 +152,7 @@ _As published in the catalogue record (https://doi.org/10.57683/EPUB-3597), supp
 | Institution | TH Köln (Technische Hochschule Köln) |
 | Faculty | Faculty of Information, Media and Electrical Engineering (F07) |
 | Institute | Institute of Computer and Communication Technology (ICCT), as the catalogue record names it; the thesis names no institute |
-| Programme | Computer Science & Engineering (Technische Informatik), M.Sc. |
+| Programme | M.Sc. Computer Science & Engineering (Technische Informatik) |
 | Supervisors | Prof. Dr. Tobias Krawutschke; M.Sc. Sebastian Wittlich, as the title page prints them |
 | Submitted | 2026-07-02 |
 | Examined | 2026-08-19 |
