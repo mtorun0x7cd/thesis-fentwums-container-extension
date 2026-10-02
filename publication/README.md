@@ -15,7 +15,7 @@ The deposited file differs from the thesis as submitted for examination on 2026-
 
 ## Relation to the sources
 
-The deposited file was typeset from LaTeX on 2026-07-02 and afterwards linearised, with its metadata rewritten, by a step that is not part of this repository; the sources therefore reproduce its text and not its bytes. Where the committed sources had diverged from the deposited text, they were reconciled with it in 2026: the third item of Section 7.3 and four hyphens in Chapter 6 (the three machine headings of Section 6.2.1 and "3-5x" in Section 6.5.4). [`scripts/compare_pdf_text.py`](../scripts/compare_pdf_text.py) compares the text of a build with this file, page by page, and CI runs the comparison on every push:
+The deposited file was typeset from LaTeX on 2026-07-02 and afterwards linearised, with its metadata rewritten, by a step that is not part of this repository; the sources therefore reproduce its text and not its bytes. Where the committed sources had diverged from the deposited text, they were reconciled with it in 2026: the third item of Section 7.3 and four hyphens in Chapter 6 (the three machine headings of Section 6.2.1 and "3-5x" in Section 6.5.4). A build of the tag sets the same words on every page; one paragraph, on p. 22 (PDF p. 37) in Section 3.2.2, breaks its lines differently, because the sources bind the citation that ends it to the preceding word with a tie, which the deposited file was typeset without. [`scripts/compare_pdf_text.py`](../scripts/compare_pdf_text.py) compares the text of a build with this file, page by page, and CI runs the comparison on every push:
 
 ```sh
 make verify-deposit
