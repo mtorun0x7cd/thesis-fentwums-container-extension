@@ -48,7 +48,7 @@ Each quantitative statement of Chapter 6 is classified as one of: *measured here
 | 6.5.3, Table 6.4 | Six FPGA artifacts byte-identical on three hosts; `Blink.vvp` different | `output_artifacts_sha256` in the result files, [`results/determinism.md`](benchmarking_suite/results/determinism.md) | measured here |
 | 6.5.3 | Image digests `90b9ccab` (Machine 1, built on the host) and `6a7572d6` (Machines 2 and 3) | `experiment.image_digest` in the result files | measured here |
 | 6.5.3 | `Blink.vvp` differs between two runs on Machine 3; the exported image re-run on Machine 1 gives the same six artifacts | none | measured, evidence not in this repository |
-| 6.4.4, Listing C.2 | Four processes, 16 threads each, 1,000 events per thread; 16,000 events in 2,602 ms | Listing C.2 of the thesis only | measured, raw log not in this repository; see E-020 |
+| 6.4.4, Listing C.2 | Four processes, 16 threads each, 1,000 events per thread; each process completing 16,000 events in 2,602 ms | Listing C.2 of the thesis, which records the result of the parent process only | measured, raw log not in this repository; see E-020 |
 | 6.4.5 | 15 µs serialisation, 45 µs and 90 µs mutex costs, 1.86 ms and 18.6 s | Equations (6.1) and (6.2) | analytic; the thesis states the constants as illustrative |
 | 6.5.4 | gRPC-FUSE "up to 10x", virtio-blk "3-5x" | none | stated without a source; see E-023 |
 | 6.5.5 | Instruction expansion of 1.6× to 2.2×; 500 to 1000 cycles per system call | none | stated without a source; see E-027 and E-028 |
