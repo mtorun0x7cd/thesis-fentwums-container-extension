@@ -19,7 +19,7 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 
 - `evaluation/docs/` and `evaluation/benchmarking_suite/README.md` name the paths of this repository instead of those of the extension repository, pass the image of the measurement (`fentwums/oss-cad-suite:2026-06-30`) explicitly, and no longer say that every number of the thesis comes from this code or that the toolchain image is published.
 - `evaluation/examples/README.md` marks the example projects as supplementary.
-- `Makefile`: `aggregate-check` first recomputes the statistics of the result files; no target writes Python's bytecode cache into the source tree.
+- `Makefile`: `aggregate-check` first recomputes the statistics of the result files; no target writes Python's bytecode cache into the source tree; `harness` builds in `evaluation/`, so that `evaluation/global.json` selects the SDK, as the harness job of `evaluation.yml` does.
 - `CITATION.cff` and `codemeta.json` carry the version 1.1.0.
 - `codemeta.json` types the thesis as `schema:Thesis`: the CodeMeta 3.0 context defines no term `Thesis`, so the bare name of the record tag did not expand. `scripts/check_metadata.py` checks the type.
 - `scripts/compare_pdf_text.py` writes the soft hyphen it drops as an escape sequence, so the script is ASCII; the comparison is unchanged.

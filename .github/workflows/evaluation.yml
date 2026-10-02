@@ -58,5 +58,10 @@ jobs:
         with:
           global-json-file: evaluation/global.json
 
+      # The SDK is selected by the global.json of the working directory, so the
+      # build runs in evaluation/, where global.json names 10.0.300.
       - name: Build the harness
-        run: dotnet build evaluation/harness/ContainerBenchmarkHarness.csproj -c Release --nologo
+        working-directory: evaluation
+        run: |
+          dotnet --version
+          dotnet build harness/ContainerBenchmarkHarness.csproj -c Release --nologo

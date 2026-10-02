@@ -64,8 +64,9 @@ aggregate-check:
 	tr -d '\r' < "$(OUT)/aggregate-check/summary.csv" | cmp - "$(RESULTS)/summary.csv"
 	@echo "summary.md and determinism.md are byte-identical; summary.csv is identical up to line endings."
 
+# The build runs in evaluation/, so that evaluation/global.json selects the SDK.
 harness:
 	test -f FEntwumS.ContainerExtension/src/ContainerExtension/ContainerExtension.csproj || \
 		{ echo "The submodule is missing: git submodule update --init FEntwumS.ContainerExtension" >&2; exit 2; }
-	$(DOTNET) build evaluation/harness/ContainerBenchmarkHarness.csproj -c Release \
+	cd evaluation && $(DOTNET) build harness/ContainerBenchmarkHarness.csproj -c Release \
 		--artifacts-path "$(abspath $(OUT))/dotnet"
