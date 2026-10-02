@@ -17,7 +17,7 @@ This folder holds what Chapter 6 of the thesis measured and how: the benchmark h
 | [`integration/`](integration/) | The designs of the measured workloads (`iCE40_Flow`, `ECP5_Flow`, `Verilog_Blink`), further fixtures, a smoke runner and a harness smoke test | 6.4 (the three designs); the rest is supplementary | MIT; six fixtures from OneWare Studio are excepted, see [`NOTICE`](../NOTICE) |
 | [`examples/`](examples/) | Eight example projects for the GateMate evaluation board | supplementary, not cited in the thesis | MIT |
 | [`docs/`](docs/) | The methodology and the protocol of the native baseline | 6.3, 6.5.2 | CC BY 4.0 |
-| [`global.json`](global.json) | .NET SDK 10.0.300 or a later feature band | 6.2.1 | MIT |
+| [`global.json`](global.json) | .NET SDK 10.0.300 or a later feature band; the three machines ran 10.0.301 | 6.2.1 | MIT |
 
 ## Paths named in the thesis
 
