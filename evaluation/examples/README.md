@@ -5,6 +5,9 @@ ContainerExtension. Every tool runs inside the `fentwums/oss-cad-suite` containe
 required. The designs span both source languages and the full synthesis, place-and-route, and bitstream
 pipeline so that, collectively, they drive the back-end tools the extension containerizes.
 
+These projects are supplementary: the thesis does not cite them, and none of its figures comes from
+them. The measured workloads of Chapter 6 use the designs under [`../integration/`](../integration/).
+
 ## Coverage matrix
 
 All eight target the Cologne Chip GateMate evaluation board and run the same back end

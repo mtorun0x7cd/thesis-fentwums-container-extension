@@ -7,18 +7,20 @@ without altering the result the user would otherwise obtain natively.
 Execution overhead and output reproducibility are supporting evidence and are
 reported as such, not as the contribution itself.
 
-The methodology mirrors the harness exactly. Every number that appears in the
-thesis is produced by the code described here; this chapter does not restate
-results, it documents how they are obtained and where they are written. The
-relevant sources are:
+The methodology mirrors the harness exactly. The measured numbers of Chapter 6
+of the thesis are produced by the code described here; its analytic estimates
+and the figures it cites from the literature are not, and
+[the README of this folder](../README.md) classifies each number. This document
+does not restate results; it documents how they are obtained and where they are
+written. The relevant sources are:
 
 | Concern | File |
 | --- | --- |
-| Per-workload measurement and statistics | `tests/benchmarking_suite/benchmark.py` |
-| Cross-platform workload matrix | `tests/benchmarking_suite/run_evaluation.py` |
-| Cross-platform aggregation and reporting | `tests/benchmarking_suite/aggregate.py` |
-| Real strategy code path (the OneWare path) | `src/ContainerBenchmarkHarness/Program.cs` |
-| Headless toolchain coverage smoke test | `tests/integration/run_all.sh` |
+| Per-workload measurement and statistics | `evaluation/benchmarking_suite/benchmark.py` |
+| Cross-platform workload matrix | `evaluation/benchmarking_suite/run_evaluation.py` |
+| Cross-platform aggregation and reporting | `evaluation/benchmarking_suite/aggregate.py` |
+| Real strategy code path (the OneWare path) | `evaluation/harness/Program.cs` |
+| Headless toolchain coverage smoke test | `evaluation/integration/run_all.sh` |
 
 ## Evaluation Axes
 
@@ -30,17 +32,17 @@ property of the architecture and is measured by a distinct part of the harness.
 The architecture is transparent if a tool invocation that succeeds natively also
 succeeds when dispatched to the container strategy, across the breadth of the
 open-source FPGA toolchain rather than a single tool. Coverage is exercised by
-`tests/integration/run_all.sh`, which drives the toolchain end to end through
-`docker run` over the workload corpus in `tests/integration/`: GHDL analysis,
+`evaluation/integration/run_all.sh`, which drives the toolchain end to end through
+`docker run` over the workload corpus in `evaluation/integration/`: GHDL analysis,
 elaboration and simulation (`VHDL_Blink`); Icarus Verilog compile and execute,
 Verilator build and execute, and Yosys synthesis (`Verilog_Blink`); SymbiYosys
 formal verification (`Formal_Verification`); the iCE40 synthesis to bitstream
 flow with Yosys, nextpnr-ice40 and icepack (`iCE40_Flow`); and the ECP5 flow with
 Yosys, nextpnr-ecp5 and ecppack (`ECP5_Flow`). Each phase is recorded as
-`SUCCESS` or `FAILED` with a wall-clock duration in `tests/integration/test_report.md`.
-This establishes that the represented categories — analysis, simulation,
-synthesis, place-and-route, bitstream packing, and formal verification — all
-execute under containerisation.
+`SUCCESS` or `FAILED` with a wall-clock duration in `evaluation/integration/test_report.md`,
+a generated file that git ignores; the report of the run for the thesis is not in
+this repository. The runner covers analysis, simulation, synthesis, place-and-route,
+bitstream packing and formal verification under containerisation.
 
 ### Output determinism and portability across machines
 
@@ -98,29 +100,33 @@ and spans the toolchain categories:
 | `sim_iverilog` | simulation | `Verilog_Blink` | `Blink.vvp` |
 
 Each workload invokes a single FPGA tool, mirroring how OneWare drives the toolchain
-— one tool per dispatch — so the `DockerExecutionStrategy` dispatches an argv
+with one tool per dispatch, so the `DockerExecutionStrategy` dispatches an argv
 vector, never a `sh -c` pipeline. The per-board workloads are ordered by dependency
 (synthesis → place-and-route → bitstream packing) so each phase's artifact persists as
 the next phase's input. Each workload is self-contained in its directory under
-`tests/integration/`; the benchmarked input files are SHA-256 hashed and recorded so the
+`evaluation/integration/`; the benchmarked input files are SHA-256 hashed and recorded so the
 exact inputs are pinned (see *Reproducibility*). End-to-end full-flow and formal
-coverage is exercised separately by the `tests/integration/run_all.sh` smoke runner.
+coverage is exercised separately by the `evaluation/integration/run_all.sh` smoke runner.
 
 ### Native, container CLI, and the real strategy path
 
-Three execution backends are compared, selected by `benchmark.py --backend`:
+Three execution backends are compared. `benchmark.py --backend` selects the two
+container backends (`cli`, `dotnet` or `all`); the native baseline is added by
+`run_evaluation.py --with-native`. The result files store the three under the keys
+`native`, `docker` and `docker_dotnet`; the thesis calls them native, CLI and
+strategy.
 
 1. **Native.** The tool is invoked directly on the host as the baseline. When the
-   tool is absent natively — common on a clean macOS or CI host — the baseline is
+   tool is absent natively, as is common on a clean macOS or CI host, the baseline is
    simply skipped and the containerised backends still run; the native baseline
    is optional (`run_evaluation.py --with-native`).
 2. **Docker CLI (`cli`).** The workload is wrapped in `docker run --rm` with the
    workspace bind-mounted at `/workspace` (`build_docker_cli_cmd`). This isolates
    the cost of containerisation itself, independent of the extension.
 3. **Strategy (`dotnet`).** The workload runs through `ContainerBenchmarkHarness`
-   (`src/ContainerBenchmarkHarness/Program.cs`), which constructs a real
+   (`evaluation/harness/Program.cs`), which constructs a real
    `DockerExecutionStrategy` over a `MockSettingsService` carrying the plugin's
-   default settings and invokes `ExecuteAsync` — the identical code path OneWare
+   default settings and invokes `ExecuteAsync`, the code path OneWare
    Studio uses in production, including image resolution, container lifecycle and
    stream demultiplexing. Telemetry and SDK logging are disabled in the harness so
    their writes do not run on the measured thread and confound the figure. This is
@@ -129,9 +135,9 @@ Three execution backends are compared, selected by `benchmark.py --backend`:
 
 `run_evaluation.py` defaults to `--backend all`, exercising both the CLI and the
 real strategy path. The overhead attributable to the extension over and above raw
-containerisation is computed directly as the cli-vs-strategy delta — a Welch t-test
+containerisation is computed directly as the cli-vs-strategy delta: a Welch t-test
 with Cohen's *d* and a 95 % confidence interval, exported as `cli_vs_dotnet` in the
-comparison block — and, needing no native baseline, it is available on every host,
+comparison block. Needing no native baseline, it is available on every host,
 including those where no native toolchain is installed.
 
 ## Statistical Method
@@ -155,7 +161,7 @@ only; no third-party numerical dependency is introduced.
   more heavily and quiet ones are not over-sampled.
 - **Welch's unpaired t-test.** Native versus each container backend is compared
   with Welch's t-test for unequal variances (`welch_t_test`), reporting `t`,
-  Welch–Satterthwaite `df`, a two-sided p-value computed from the regularised
+  Welch-Satterthwaite `df`, a two-sided p-value computed from the regularised
   incomplete beta function (`student_t_two_sided_p`), the mean difference and its
   95% CI, and significance at α = 0.05.
 - **Paired t-test (interleaved mode).** With `--interleave`, native and container
@@ -190,8 +196,8 @@ without external notes. `export_json` (`SCHEMA_VERSION = 2`) records:
   size in a distinct `pull_cost` block. The one-time acquisition cost is thus
   never folded into the steady-state execution figures.
 
-All output is constrained to the repository root; `export_json` refuses to write
-outside it.
+All output is constrained to the benchmarking suite directory: `export_json` refuses
+to write a path that does not begin with it.
 
 ## How to Reproduce
 
@@ -213,16 +219,17 @@ available, build the .NET strategy harness once and run the evaluation:
 
 ```bash
 # Build the real-strategy backend (once per machine).
-dotnet publish src/ContainerBenchmarkHarness/ContainerBenchmarkHarness.csproj \
-  -c Release -o tests/benchmarking_suite/harness_bin
+dotnet publish evaluation/harness/ContainerBenchmarkHarness.csproj \
+  -c Release -o evaluation/benchmarking_suite/harness_bin
 
-# Run the full cross-platform workload matrix (CLI + real strategy).
-python3 tests/benchmarking_suite/run_evaluation.py \
-  --image fentwums/oss-cad-suite:latest
+# Run the full cross-platform workload matrix (CLI + real strategy) with the
+# image of the measurement.
+python3 evaluation/benchmarking_suite/run_evaluation.py \
+  --image fentwums/oss-cad-suite:2026-06-30
 ```
 
 The runner writes one JSON file per workload into
-`tests/benchmarking_suite/results/<platform-tag>/`. Add `--with-native` on hosts
+`evaluation/benchmarking_suite/results/<platform-tag>/`. Add `--with-native` on hosts
 where the toolchain is installed natively to obtain the overhead baseline; use
 `--only <name> ...` to run a subset, and `--image` to pin a specific toolchain
 image.
@@ -233,7 +240,7 @@ Collect every machine's `results/<platform-tag>/` tree into a single
 `results/` directory, then aggregate:
 
 ```bash
-python3 tests/benchmarking_suite/aggregate.py
+python3 evaluation/benchmarking_suite/aggregate.py
 ```
 
 This emits the reporting artifacts described below. Figures require `matplotlib`;
@@ -253,7 +260,7 @@ the tables do not.
 The three axes are read against three distinct expectations.
 
 - **Transparency and coverage** hold when every phase in
-  `tests/integration/test_report.md` and every workload in `results/summary.md`
+  `evaluation/integration/test_report.md` and every workload in `results/summary.md`
   completes successfully across the toolchain categories. A failure localises to a
   specific tool and platform rather than a global pass/fail.
 - **Determinism** holds where the `Identical?` column in `results/determinism.md`
@@ -273,5 +280,5 @@ The three axes are read against three distinct expectations.
 The overhead figures are supporting evidence for the viability of the
 architecture, not its contribution. The contribution is that the same tool
 invocation, unchanged from the user's perspective, runs in an isolated and
-portable environment and yields a machine-independent result — which the
-transparency and determinism axes establish, and which the overhead axis bounds.
+portable environment and yields a machine-independent result, which the
+transparency and determinism axes establish and the overhead axis bounds.

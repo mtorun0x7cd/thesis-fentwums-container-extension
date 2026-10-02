@@ -4,15 +4,16 @@ Reproduces the empirical evaluation in the Master's thesis *"Design and Implemen
 Architecture for the Transparent Integration of Containerized Execution Environments for Heterogeneous
 Open-Source Binaries in OneWare Studio"*. The evaluation has three axes:
 
-1. **Functional transparency** — the unmodified FPGA toolchain (synthesis, place-and-route, bitstream,
+1. **Functional transparency.** The unmodified FPGA toolchain (synthesis, place-and-route, bitstream,
    simulation) executes correctly through the containerized backends.
-2. **Output determinism / portability** — the produced netlists and bitstreams are SHA-256 hashed on
+2. **Output determinism and portability.** The produced netlists and bitstreams are SHA-256 hashed on
    every machine; identical hashes across platforms are direct evidence that the architecture makes
    tool outputs machine-independent.
-3. **Execution-overhead characterisation** — native vs. container, and raw `docker run` vs. the real
-   `DockerExecutionStrategy` code path, reported with 95% confidence intervals.
+3. **Execution-overhead characterisation.** Native against container, and raw `docker run` against the
+   real `DockerExecutionStrategy` code path, reported with 95% confidence intervals.
 
-See [`../docs/evaluation.md`](../docs/evaluation.md) for the full methodology.
+See [`../docs/evaluation.md`](../docs/evaluation.md) for the full methodology and [`../README.md`](../README.md)
+for the provenance of the committed results and the classification of each number of the thesis.
 
 ## Components
 
@@ -21,14 +22,17 @@ See [`../docs/evaluation.md`](../docs/evaluation.md) for the full methodology.
 | `benchmark.py` | Single-workload driver: warmup, measured iterations, 95% Student-t confidence intervals, Welch unpaired and (interleaved) paired t-tests, Cohen's d, CV-adaptive repetition, full environment capture, separated image-pull cost, output-artifact hashing. |
 | `run_evaluation.py` | Cross-platform orchestrator over the fixed workload matrix (iCE40 and ECP5 synthesis, place-and-route, and pack, plus Verilog simulation). One command per machine. |
 | `aggregate.py` | Combines the per-platform results into `summary.csv`, `determinism.md` (cross-machine artifact-hash matrix), `summary.md`, and `figures/` (95% CI bar charts). |
-| `harness_bin/` | Published `ContainerBenchmarkHarness` — runs a tool through the real `DockerExecutionStrategy`. Build artifact (git-ignored). |
+| `harness_bin/` | Published `ContainerBenchmarkHarness`, which runs a tool through the real `DockerExecutionStrategy`. Build artifact (git-ignored). |
 
 ## Requirements
 
 - Python 3.8+ (standard library only for the tables; `pip install matplotlib` is needed for figures).
 - A running container engine (Docker, Podman, OrbStack, ...).
-- The toolchain image (default `fentwums/oss-cad-suite:latest`). For a native baseline (`--with-native`),
-  the same tools must be on the host `PATH` at matching versions.
+- The toolchain image. The measurement used `fentwums/oss-cad-suite:2026-06-30`, built locally from
+  `FEntwumS.ContainerExtension/docker/`; it is on no registry. `run_evaluation.py` defaults to
+  `fentwums/oss-cad-suite:latest`, a tag the same build sets, and `benchmark.py` on its own to another
+  image, so pass `--image` explicitly. For a native baseline (`--with-native`), the same tools must be on
+  the host `PATH` at matching versions.
 
 ## Reproduce (run on each machine)
 
@@ -37,10 +41,10 @@ See [`../docs/evaluation.md`](../docs/evaluation.md) for the full methodology.
 dotnet publish ../harness/ContainerBenchmarkHarness.csproj -c Release -o harness_bin
 
 # Run the full workload matrix (docker CLI + the real strategy path).
-python3 run_evaluation.py --image fentwums/oss-cad-suite:latest
+python3 run_evaluation.py --image fentwums/oss-cad-suite:2026-06-30
 
 # On a host where the native tools are installed at the container versions, add the native baseline:
-python3 run_evaluation.py --with-native
+python3 run_evaluation.py --image fentwums/oss-cad-suite:2026-06-30 --with-native
 ```
 
 Each run writes `results/<platform>/<workload>.json` (for example `results/linux-amd64/synth_ice40_yosys.json`),
@@ -57,10 +61,10 @@ python3 aggregate.py
 
 This produces, under `results/`:
 
-- `summary.csv` — one row per platform × workload × backend (mean, 95% CI, CV, native overhead, p-value).
-- `determinism.md` — the cross-platform artifact-hash matrix (do the bitstreams match across machines?).
-- `summary.md` — a human-readable overview grouped by platform.
-- `figures/time_<platform>.png` — mean execution time with 95% CI error bars (requires matplotlib).
+- `summary.csv`: one row per platform × workload × backend (mean, 95% CI, CV, native overhead, p-value).
+- `determinism.md`: the cross-platform artifact-hash matrix (do the bitstreams match across machines?).
+- `summary.md`: a human-readable overview grouped by platform.
+- `figures/time_<platform>.png`: mean execution time with 95% CI error bars (requires matplotlib).
 
 ## Single-workload use
 
