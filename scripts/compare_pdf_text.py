@@ -4,9 +4,9 @@
 """Compare the text of a thesis build with the text of the deposited file.
 
 The sources in thesis/ reproduce the text of the deposited PDF, not its bytes:
-the deposited file was typeset on 2026-07-02 and afterwards linearised, with its
-metadata rewritten, by a step that is not part of this repository. This script
-checks the text claim.
+the deposited file was typeset on 2026-07-02 and afterwards processed outside
+this repository, among other things linearised and given new metadata. This
+script checks the text claim.
 
 Method. Both files are read with `pdftotext -layout` (poppler). The output is
 split into pages at the form feeds; each page is normalised to Unicode NFKC,
