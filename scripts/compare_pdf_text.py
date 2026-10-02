@@ -65,7 +65,7 @@ def pages_of(pdf):
 
 def tokens(text):
     """The tokens of one page after normalisation."""
-    return unicodedata.normalize("NFKC", text).replace("­", "").split()
+    return unicodedata.normalize("NFKC", text).replace("\u00ad", "").split()
 
 
 def read_allowlist(path):
