@@ -115,7 +115,18 @@ The measurement needs Docker, the .NET SDK and Python 3 on each host, and the su
    python3 evaluation/benchmarking_suite/aggregate.py
    ```
 
-The image is build-only and is not on a registry, so a rebuilt image has its own digest (thesis, 6.5.3); its tool binaries come from the same checksummed archive. The check is therefore the six FPGA artifact hashes of [`results/determinism.md`](benchmarking_suite/results/determinism.md), whose full values stand in the result files; `Blink.vvp` differs from run to run by design (6.5.3).
+The image is build-only and is not on a registry, so a rebuilt image has its own digest (thesis, 6.5.3); its tool binaries come from the same checksummed archive. The check of a rerun is therefore the six FPGA artifacts, whose SHA-256 values were the same on all three machines:
+
+| Workload | Artifact | SHA-256 |
+| --- | --- | --- |
+| `synth_ice40_yosys` | `ice40_blink.json` | `c9d719c17f01113e1e72a8e5bbe050bc35ca3b0b0f2fdeefe696a516ec3a0c46` |
+| `synth_ecp5_yosys` | `ecp5_blink.json` | `65bb1549bab3067dc30509a6e3ad8be23ddbc1823300d031106ef6bada302563` |
+| `pnr_ice40_nextpnr` | `ice40_blink.asc` | `31350507657f945e90cce6c6f4224410e55193cfdcbdcafcd206f3f380f045ba` |
+| `pnr_ecp5_nextpnr` | `ecp5_blink.config` | `ab2628df3a28a9bc59e160da140160a85a35dabb23129c38332ff5ad8837fddc` |
+| `pack_ice40_icepack` | `ice40_blink.bin` | `a8b0b3aa554c2cfdf4990a88c89a48aafe85798a73d0f400f4be74763c887f29` |
+| `pack_ecp5_ecppack` | `ecp5_blink.bit` | `37e5e6ab10042f3aa91f512e9c88e1c7434643c9ba967a2346ac032e7eead9f0` |
+
+[`results/determinism.md`](benchmarking_suite/results/determinism.md) shows the first twelve characters of each value, and every result file holds them in full under `output_artifacts_sha256`. The seventh artifact, `Blink.vvp` of `sim_iverilog`, differs from run to run, because Icarus Verilog names objects after heap addresses (6.5.3).
 
 The result timestamps give the time a run takes, without the image build and the harness publish: about 7 minutes on Machine 1, 16 minutes on Machine 2 with the native baseline, and 10 minutes on Machine 3.
 
