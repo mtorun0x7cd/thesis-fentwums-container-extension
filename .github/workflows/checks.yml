@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    name: Version of record
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the deposited file against SHA256SUMS
+        working-directory: publication
+        run: sha256sum -c SHA256SUMS
+
+  metadata:
+    name: Citation metadata
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the validators
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --disable-pip-version-check cffconvert==2.0.0 PyYAML==6.0.2 pyld==2.0.4
+
+      - name: Validate CITATION.cff with cffconvert
+        run: |
+          "$RUNNER_TEMP/venv/bin/cffconvert" --validate
+
+      # A plain YAML loader turns an unquoted date into a date object, which
+      # the schema refuses; this step reads the file the way such a loader does.
+      - name: Validate CITATION.cff against schema 1.2.0 through a plain YAML loader
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" - <<'PYEOF'
+          import json, pathlib
+          import cffconvert, jsonschema, yaml
+          schema_path = pathlib.Path(cffconvert.__file__).parent / "schemas" / "1.2.0" / "schema.json"
+          schema = json.loads(schema_path.read_text(encoding="utf-8"))
+          data = yaml.safe_load(pathlib.Path("CITATION.cff").read_text(encoding="utf-8"))
+          jsonschema.validate(data, schema)
+          print("CITATION.cff holds schema 1.2.0 as a plain YAML loader reads it")
+          PYEOF
+
+      - name: Expand codemeta.json as JSON-LD
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" - <<'PYEOF'
+          import json, pathlib
+          from pyld import jsonld
+          document = json.loads(pathlib.Path("codemeta.json").read_text(encoding="utf-8"))
+          expanded = jsonld.expand(document)
+          if not expanded or len(expanded[0]) < 10:
+              raise SystemExit("codemeta.json expands to too few properties: %r" % expanded)
+          print("codemeta.json expands to %d properties" % len(expanded[0]))
+          PYEOF
+
+      - name: Check that CITATION.cff, codemeta.json and the README's BibTeX entry agree
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" scripts/check_metadata.py
+          "$RUNNER_TEMP/venv/bin/python" scripts/check_metadata.py --selftest
+
+  reuse:
+    name: REUSE
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint the licensing information
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --disable-pip-version-check reuse==5.0.2
+          "$RUNNER_TEMP/venv/bin/reuse" lint
+
+  links:
+    name: Links to doi.org, nbn-resolving.org, this repository and the pins
+    # Not a required check: it depends on hosts outside this repository.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Request each link
+        run: python3 scripts/check_links.py

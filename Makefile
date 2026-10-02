@@ -7,13 +7,14 @@
 #   make check            run ChkTeX over the thesis sources; any warning fails
 #   make verify-deposit   check publication/ against SHA256SUMS and compare the
 #                         text of the build with the deposited file
-#   make aggregate-check  recompute the result tables from the raw JSON and
-#                         compare them with the committed tables
+#   make aggregate-check  recompute the statistics of every result file from its
+#                         raw times, and the result tables from the result
+#                         files, and compare both with what is committed
 #   make harness          build the benchmark harness (needs the submodule
 #                         FEntwumS.ContainerExtension and the .NET SDK)
 #
 # All output goes to $(OUT), which is git-ignored; the source tree is not
-# written to.
+# written to, Python's bytecode cache included.
 
 SHELL       := /bin/bash
 .SHELLFLAGS := -euo pipefail -c
@@ -28,10 +29,12 @@ DEPOSIT := publication/Torun_Containerized_Execution_OneWare.pdf
 RESULTS := evaluation/benchmarking_suite/results
 
 # The build date is fixed to the creation date of the deposited file,
-# 2026-07-02T19:05:35Z, so that two builds of the same sources give the same
-# bytes and no build depends on the date of the last commit.
+# 2026-07-02T19:05:35Z, so that no build depends on the date of the last commit
+# and two builds of the same sources in one directory give the same bytes (the
+# PDF identifier depends on the directory).
 export SOURCE_DATE_EPOCH ?= 1783019135
 export FORCE_SOURCE_DATE := 1
+export PYTHONDONTWRITEBYTECODE := 1
 
 .PHONY: thesis check verify-deposit aggregate-check harness
 
@@ -49,6 +52,7 @@ verify-deposit: thesis
 	$(PYTHON) scripts/compare_pdf_text.py "$(OUT)/thesis/main.pdf" "$(DEPOSIT)"
 
 aggregate-check:
+	$(PYTHON) scripts/check_result_statistics.py
 	mkdir -p "$(OUT)/aggregate-check"
 	for platform in linux-amd64 macos-arm64 windows-amd64; do \
 		mkdir -p "$(OUT)/aggregate-check/$$platform"; \

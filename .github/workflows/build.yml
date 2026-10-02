@@ -1,0 +1,94 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  thesis:
+    name: Typeset the thesis twice and compare
+    runs-on: ubuntu-24.04
+    container:
+      # TeX Live, pinned by digest: xu-cheng/texlive-full as of 2026-07-02.
+      image: ghcr.io/xu-cheng/texlive-full@sha256:11383430b9a3e48c0b79339f34d8092f942f897d91ab3749d4899d06731fea7f
+    env:
+      # The creation date of the deposited file, as the Makefile sets it.
+      SOURCE_DATE_EPOCH: "1783019135"
+      FORCE_SOURCE_DATE: "1"
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Record the versions of the TeX tools
+        run: |
+          tex --version | head -n 1
+          lualatex --version | head -n 1
+          biber --version
+          latexmk -v | head -n 2
+          chktex --version | head -n 1
+
+      - name: Lint the sources with ChkTeX
+        run: find thesis -name '*.tex' -not -path 'thesis/setup/*' -exec chktex -q -I0 -l .chktexrc {} +
+
+      - name: Typeset the thesis
+        working-directory: thesis
+        run: latexmk -norc -r latexmk.conf -outdir=../build/first main.tex
+
+      - name: Typeset it again and compare the bytes
+        working-directory: thesis
+        run: |
+          latexmk -norc -r latexmk.conf -outdir=../build/second main.tex
+          cmp ../build/first/main.pdf ../build/second/main.pdf
+          sha256sum ../build/first/main.pdf
+
+      - name: Check the deposited file against SHA256SUMS
+        working-directory: publication
+        run: sha256sum -c SHA256SUMS
+
+      - name: Keep the build for the text comparison
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: thesis-build-from-sources-not-the-version-of-record
+          path: build/first/main.pdf
+          if-no-files-found: error
+          retention-days: 14
+
+  text:
+    name: Compare the text with the deposited file
+    needs: thesis
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pdftotext
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
+
+      - name: Fetch the build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: thesis-build-from-sources-not-the-version-of-record
+          path: build
+
+      - name: Prove that the comparison finds a changed dash, word or page
+        run: python3 scripts/compare_pdf_text.py --selftest
+
+      - name: Compare the text of the build with the deposited file
+        run: python3 scripts/compare_pdf_text.py build/main.pdf publication/Torun_Containerized_Execution_OneWare.pdf

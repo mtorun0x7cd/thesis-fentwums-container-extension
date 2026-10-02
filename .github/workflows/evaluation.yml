@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+name: Evaluation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  apparatus:
+    name: Tables, scripts and the provenance anchor
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prove that a changed raw time is found
+        run: python3 scripts/check_result_statistics.py --selftest
+
+      - name: Recompute the statistics and the tables from the raw results and compare them
+        run: make aggregate-check
+
+      # The Linux and Windows result files record this SHA-256 of the script
+      # that produced them; the script must stay as it ran.
+      - name: Check benchmark.py against the SHA-256 the results record
+        run: echo "05c43db4429238847330968ad33d1020a36fa227c568a0ac8a874922a108b544  evaluation/benchmarking_suite/benchmark.py" | sha256sum -c -
+
+      - name: Compile the Python scripts
+        run: python3 -m py_compile evaluation/benchmarking_suite/*.py scripts/*.py
+
+  harness:
+    name: Build the harness against the pinned extension
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check out the pinned extension
+        run: git submodule update --init FEntwumS.ContainerExtension
+
+      - name: Set up the .NET SDK that evaluation/global.json names
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          global-json-file: evaluation/global.json
+
+      - name: Build the harness
+        run: dotnet build evaluation/harness/ContainerBenchmarkHarness.csproj -c Release --nologo
