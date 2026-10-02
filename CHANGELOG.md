@@ -21,6 +21,7 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 - `evaluation/examples/README.md` marks the example projects as supplementary.
 - `Makefile`: `aggregate-check` first recomputes the statistics of the result files; no target writes Python's bytecode cache into the source tree.
 - `CITATION.cff` and `codemeta.json` carry the version 1.1.0.
+- `codemeta.json` types the thesis as `schema:Thesis`: the CodeMeta 3.0 context defines no term `Thesis`, so the bare name of the record tag did not expand. `scripts/check_metadata.py` checks the type.
 
 ## [epub-3597] - 2026-10-02
 
