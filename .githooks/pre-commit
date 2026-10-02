@@ -7,7 +7,7 @@
 # Requires gitleaks (https://github.com/gitleaks/gitleaks).
 
 if command -v gitleaks >/dev/null 2>&1; then
-    gitleaks protect --staged --redact --no-banner || {
+    gitleaks git --staged --redact --no-banner || {
         echo "gitleaks: staged changes contain a potential secret; commit aborted." >&2
         exit 1
     }
