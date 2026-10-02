@@ -12,6 +12,7 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 - `ERRATA.md`: the known errors of the deposited thesis, the properties of its catalogue record and of the deposited file, and the web addresses of the thesis that have moved.
 - `evaluation/README.md`: every quantitative statement of Chapter 6 with its evidence and kind, the provenance of the results of the three machines, the terms and the rerun recipe.
 - `evaluation/harness/packages.lock.upstream-1884317.json`: the restore lock file of the harness as the extension repository held it at commit `1884317`, the state of the macOS measurement on 2026-06-30, kept as evidence. Restore does not read it, and the harness has no lock file of its own yet.
+- `evaluation/benchmarking_suite/results/supplementary/shared-image-control/`: the original files of the cross-host control of Section 6.5.3, in which the image of Machine 3 ran unchanged on Machine 1 on 2026-07-02. They were found in 2026 and are added unchanged; `evaluation/README.md` gives their bytes, SHA-256 and dates.
 - `scripts/check_result_statistics.py`, which recomputes the statistics of every result file from its raw times with the functions of `benchmark.py`; `make aggregate-check` runs it before it recomputes the tables.
 - `SECURITY.md`, `CONTRIBUTING.md`, the correction form, the workflows, the social card and the scripts that check the metadata and the links.
 

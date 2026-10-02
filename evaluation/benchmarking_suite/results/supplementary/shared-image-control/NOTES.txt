@@ -1,0 +1,13 @@
+Shared-image determinism control (2026-07-02)
+=============================================
+Purpose: close the "two independent image builds" caveat empirically.
+Procedure: the exact image Machine 3 (Windows) executed was exported (docker save),
+loaded UNCHANGED on Machine 1 (Mac, arm64), and the 6 FPGA workloads re-run (cli, n=1).
+Image B (Windows-built) ID: sha256:6a7572d6a7169c9909bfd3b6296082900e3840732fbc5ba6c102fe1f662404b4
+Image A (Mac-built)     ID: sha256:90b9ccab6a7f638097a3a49e9e1e0b0b50071451b80ca41fb00ec840ab7e3e79
+Exported tarball SHA-256 : f03485b127f1d1865ec2b1cc3b8ab1c5e46d4b268b2cc9abbbfc2fece0f81a3f
+Result: all 6 FPGA artifacts byte-identical across {Mac+B, Mac+A, Win+B}.
+  -> same image, different host  == identical (machine independence, image fixed)
+  -> different build, same host  == identical (the two builds are output-equivalent)
+These JSONs are the raw Mac+ImageB run; kept out of results/ so aggregate.py's
+2-platform tables are not polluted (this is a control, not a timing platform).

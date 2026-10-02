@@ -27,8 +27,10 @@ licence texts are in LICENSES/.
                                   Mert Torun.
 
   evaluation/benchmarking_suite/  CC BY 4.0. Measured data: the raw results of
-  results/                        the three test machines and the tables and
-                                  figures aggregate.py derives from them.
+  results/                        the three test machines, the tables and
+                                  figures aggregate.py derives from them, and
+                                  under supplementary/ the original files of
+                                  the cross-host control of Section 6.5.3.
                                   Copyright 2026 Mert Torun.
 
   evaluation/harness/,            MIT. The benchmark harness, the evaluation

@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "timestamp": "2026-07-02T11:07:11.285785+02:00",
+  "system": {
+    "os": "Darwin",
+    "release": "25.6.0",
+    "machine": "arm64",
+    "cpu_model": "Apple M4 Max",
+    "logical_cores": 16,
+    "total_ram_gb": 128.0,
+    "python_version": "3.9.6",
+    "docker": {
+      "server_version": "29.4.0",
+      "operating_system": "OrbStack",
+      "storage_driver": "overlayfs",
+      "architecture": "aarch64"
+    }
+  },
+  "experiment": {
+    "workload": "icepack ice40_blink.asc ice40_blink.bin",
+    "native_tool_version": "Unknown or executable missing",
+    "image": "fentwums/oss-cad-suite:winbuilt",
+    "image_digest": "fentwums/oss-cad-suite@sha256:6a7572d6a7169c9909bfd3b6296082900e3840732fbc5ba6c102fe1f662404b4",
+    "platform_override": null,
+    "backend": "cli",
+    "interleaved": false,
+    "iterations": 1,
+    "warmup": 0,
+    "target_cv_percent": null,
+    "max_iterations": null,
+    "input_file_sha256": {
+      "ice40_blink.asc": "31350507657f945e90cce6c6f4224410e55193cfdcbdcafcd206f3f380f045ba",
+      "ice40_blink.bin": "a8b0b3aa554c2cfdf4990a88c89a48aafe85798a73d0f400f4be74763c887f29"
+    },
+    "harness_git_commit": "7828e51dbc7c",
+    "benchmark_py_sha256": "05c43db4429238847330968ad33d1020a36fa227c568a0ac8a874922a108b544"
+  },
+  "results": {
+    "native": {
+      "times": [],
+      "return_codes": [],
+      "statistics": null
+    },
+    "docker": {
+      "times": [
+        0.4391737079999999
+      ],
+      "return_codes": [
+        0
+      ],
+      "statistics": {
+        "n": 1,
+        "mean": 0.4391737079999999,
+        "stdev": 0.0,
+        "sem": 0.0,
+        "ci95_halfwidth": 0.0,
+        "ci95_low": 0.4391737079999999,
+        "ci95_high": 0.4391737079999999,
+        "min": 0.4391737079999999,
+        "max": 0.4391737079999999,
+        "median": 0.4391737079999999,
+        "p95": 0.4391737079999999,
+        "cv_percent": 0.0
+      },
+      "peak_rss_bytes": 48414720
+    }
+  },
+  "output_artifacts_sha256": {
+    "ice40_blink.bin": "a8b0b3aa554c2cfdf4990a88c89a48aafe85798a73d0f400f4be74763c887f29"
+  }
+}

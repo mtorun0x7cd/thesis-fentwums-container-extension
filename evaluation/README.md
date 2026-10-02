@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # Evaluation apparatus
 
-This folder holds what Chapter 6 of the thesis measured and how: the benchmark harness, the evaluation scripts, the raw results of the three test machines, the tables and figures derived from them, the hardware designs of the measured workloads, and two supplementary sets of designs. The scripts and the results are kept as they ran; where the documentation of 2026-06-30 had gone stale, it is corrected, and every correction is in the documentation only.
+This folder holds what Chapter 6 of the thesis measured and how: the benchmark harness, the evaluation scripts, the raw results of the three test machines, the tables and figures derived from them, the original files of the cross-host control of Section 6.5.3, the hardware designs of the measured workloads, and two supplementary sets of designs. The scripts and the results are kept as they ran; where the documentation of 2026-06-30 had gone stale, it is corrected, and every correction is in the documentation only.
 
 | Path | Content | In the thesis | Licence |
 | --- | --- | --- | --- |
@@ -13,7 +13,7 @@ This folder holds what Chapter 6 of the thesis measured and how: the benchmark h
 | [`benchmarking_suite/benchmark.py`](benchmarking_suite/benchmark.py) | Single-workload driver: warm-up, timing, statistics, environment capture, artifact hashes | 6.3.3, 6.3.4 | MIT |
 | [`benchmarking_suite/run_evaluation.py`](benchmarking_suite/run_evaluation.py) | The workload matrix, one command per machine | 6.3, 6.4 | MIT |
 | [`benchmarking_suite/aggregate.py`](benchmarking_suite/aggregate.py) | Writes `summary.csv`, `summary.md`, `determinism.md` and the figures | 6.4, 6.5.3 | MIT |
-| [`benchmarking_suite/results/`](benchmarking_suite/results/) | Raw results, one JSON file per workload and machine, and the tables and figures derived from them | Tables 6.1 to 6.4 | CC BY 4.0 |
+| [`benchmarking_suite/results/`](benchmarking_suite/results/) | Raw results, one JSON file per workload and machine, and the tables and figures derived from them; under `supplementary/`, the original files of the cross-host control | Tables 6.1 to 6.4; 6.5.3 | CC BY 4.0 |
 | [`integration/`](integration/) | The designs of the measured workloads (`iCE40_Flow`, `ECP5_Flow`, `Verilog_Blink`), further fixtures, a smoke runner and a harness smoke test | 6.4 (the three designs); the rest is supplementary | MIT; six fixtures from OneWare Studio are excepted, see [`NOTICE`](../NOTICE) |
 | [`examples/`](examples/) | Eight example projects for the GateMate evaluation board | supplementary, not cited in the thesis | MIT |
 | [`docs/`](docs/) | The methodology and the protocol of the native baseline | 6.3, 6.5.2 | CC BY 4.0 |
@@ -47,7 +47,8 @@ Each quantitative statement of Chapter 6 is classified as one of: *measured here
 | 6.5.2 | The parity gate rejecting the Windows native toolchain (MinGW build) | none | measured, evidence not in this repository |
 | 6.5.3, Table 6.4 | Six FPGA artifacts byte-identical on three hosts; `Blink.vvp` different | `output_artifacts_sha256` in the result files, [`results/determinism.md`](benchmarking_suite/results/determinism.md) | measured here |
 | 6.5.3 | Image digests `90b9ccab` (Machine 1, built on the host) and `6a7572d6` (Machines 2 and 3) | `experiment.image_digest` in the result files | measured here |
-| 6.5.3 | `Blink.vvp` differs between two runs on Machine 3; the exported image re-run on Machine 1 gives the same six artifacts | none | measured, evidence not in this repository |
+| 6.5.3 | The image Machine 3 ran, exported with `docker save` and loaded unchanged on Machine 1, gives the same six FPGA artifacts there | [`results/supplementary/shared-image-control/`](benchmarking_suite/results/supplementary/shared-image-control/): the six result files of that run and the note written with them | measured here; see [the cross-host control](#the-cross-host-control) |
+| 6.5.3 | `Blink.vvp` differs between two runs on Machine 3 | none | measured, evidence not in this repository |
 | 6.4.4, Listing C.2 | Four processes, 16 threads each, 1,000 events per thread; each process completing 16,000 events in 2,602 ms | Listing C.2 of the thesis, which records the result of the parent process only | measured, raw log not in this repository; see E-020 |
 | 6.4.5 | 15 µs serialisation, 45 µs and 90 µs mutex costs, 1.86 ms and 18.6 s | Equations (6.1) and (6.2) | analytic; the thesis states the constants as illustrative |
 | 6.5.4 | gRPC-FUSE "up to 10x", virtio-blk "3-5x" | none | stated without a source; see E-023 |
@@ -60,14 +61,28 @@ Each quantitative statement of Chapter 6 is classified as one of: *measured here
 | Folder | Machine | Recorded host | Results taken | `benchmark.py` | State of the extension and the harness | Image digest |
 | --- | --- | --- | --- | --- | --- | --- |
 | `macos-arm64` | 1 | Darwin 25.6.0, Apple M4 Max, 16 logical cores, 128 GB; Docker 29.4.0 (OrbStack) | 2026-06-30, 21:03 to 21:10 (UTC+2) | SHA-256 `62b49f26…`: the file at upstream commit `1884317`, which differs from the committed one in seven lines of path handling | `1884317` (recorded), 19 commits before the pin | `sha256:90b9ccab…`, built on the host |
-| `linux-amd64` | 2 | Linux 7.0.0-15-generic, Intel Core Ultra 9 285H, 16 logical cores, 61.0 GB; Docker 29.1.3 (Ubuntu 26.04 LTS) | 2026-07-02, 12:52 to 13:08 | SHA-256 `05c43db4…`, the committed file | not recorded | `sha256:6a7572d6…` |
-| `windows-amd64` | 3 | Windows 11, CPU reported as "Intel64 Family 6 Model 170 Stepping 4", 22 logical cores, 31.46 GB; Docker 29.6.1 (Docker Desktop) | 2026-07-02, 09:27 to 09:37 | SHA-256 `05c43db4…`, the committed file | not recorded | `sha256:6a7572d6…` |
+| `linux-amd64` | 2 | Linux 7.0.0-15-generic, Intel Core Ultra 9 285H, 16 logical cores, 61.0 GB; Docker 29.1.3 (Ubuntu 26.04 LTS) | 2026-07-02, 12:52 to 13:08 (UTC+2) | SHA-256 `05c43db4…`, the committed file | not recorded | `sha256:6a7572d6…` |
+| `windows-amd64` | 3 | Windows 11, CPU reported as "Intel64 Family 6 Model 170 Stepping 4", 22 logical cores, 31.46 GB; Docker 29.6.1 (Docker Desktop) | 2026-07-02, 09:27 to 09:37 (UTC+2) | SHA-256 `05c43db4…`, the committed file | not recorded | `sha256:6a7572d6…` |
 
 The pinned commit `5fa2f5f` is the state of the extension when the thesis was submitted, not the state the measurements ran on. Between `1884317` and the pin, the upstream commits change `DockerExecutionStrategy.cs` (53 lines) and `RegistryClient.cs` (34 lines), raise the version to 1.0.10, and remove the harness and the evaluation scripts, which `0e16a87` moved here. The Windows results predate the commit time of the upstream commit that holds the named-pipe correction Section 6.5.7 describes (`22ed5f6`, 10:19 on the same day); since a commit time does not show when the code was written, the state that ran on Machines 2 and 3 cannot be named.
 
 `harness/Program.cs` and `harness/link.xml` are byte-identical with their state at `1884317`; the project file differs only in the form of its package versions and in the path of the project reference. The restore lock file of the harness at `1884317` is kept as evidence in [`harness/packages.lock.upstream-1884317.json`](harness/packages.lock.upstream-1884317.json) (SHA-256 `7229eb86825283b62253dc14f8a2ad5984f4a7cd19faad57e5c4bee0e02cae02`, from upstream commit `651e1e7` of 2026-06-30). It resolves `Microsoft.Extensions.DependencyInjection` 10.0.9, `OneWare.Essentials` 1.0.19 and `Docker.DotNet` 3.125.15, the versions the project file names. Under its name, restore does not read it. It was written under the central package management of the extension, while this project names its versions itself, so whether it restores in locked mode against this file is open: that check (`dotnet restore --locked-mode`) needs the package feed and has not been run, and the project has no lock file of its own yet.
 
 The SHA-256 of `benchmark.py` stands in every Linux and Windows result file; the file stays unchanged so that the value can be checked. The SHA-256 of each input design stands in every result file as well.
+
+### The cross-host control
+
+[`results/supplementary/shared-image-control/`](benchmarking_suite/results/supplementary/shared-image-control/) holds the original files of the control that Section 6.5.3 describes: the image Machine 3 ran (`sha256:6a7572d6…`) was exported with `docker save` and loaded unchanged on Machine 1, and the six FPGA workloads were run against it once each through the CLI backend. Each of the six artifact hashes equals the one in the three result folders above. The run took place on 2026-07-02 at 11:07 (UTC+2), between the runs of Machine 3 and Machine 2. The result files record the committed `benchmark.py` (SHA-256 `05c43db4…`) and a harness commit, `7828e51`, that is in neither the history of this repository nor that of the extension; the CLI backend does not use the harness. `NOTES.txt` is the note written with the results. The files were found on 2026-10-02 in an untracked folder of the author's working copy of the earlier repository of this thesis, read for personal data, and added unchanged. `aggregate.py` and `make aggregate-check` read only the three platform folders, so the control enters no table.
+
+| File | Bytes | SHA-256 | Last modified (UTC+2) |
+| --- | --- | --- | --- |
+| `NOTES.txt` | 1,025 | `00451e3a273f6b40c0af4ad3fdc935186471a20e4202369803d6e33747f44d59` | 2026-07-02 11:09:11 |
+| `synth_ice40_yosys.json` | 2,024 | `b3f6dbcb1ac8db5b69a94385d9be0f272a66e635c4e144f9ed358c17a2d6fe15` | 2026-07-02 11:09:11 |
+| `synth_ecp5_yosys.json` | 2,002 | `e81aa56110a234faff98d9b7749bceddf5e70f1bcbc3b67e88c6dbfcf41e1fcd` | 2026-07-02 11:09:11 |
+| `pnr_ice40_nextpnr.json` | 2,165 | `588196d65b9cd20808cb8b489da45f168c4a6429bdc33b90f66ae577ee2c8620` | 2026-07-02 11:09:11 |
+| `pnr_ecp5_nextpnr.json` | 2,244 | `9b8229ab6d4def2c38e2a2c65b3d4b4e2e976cfbe9bb71b2754d58a09f063bbc` | 2026-07-02 11:09:11 |
+| `pack_ice40_icepack.json` | 2,078 | `c618c44a5df4a5fbf60d82db743383c80b551f27016a938312fbcfeba9c52f31` | 2026-07-02 11:09:11 |
+| `pack_ecp5_ecppack.json` | 2,007 | `5ad3972f0b3241424712c8f09b380ba3aaf70fd96fff9c964a0de9af145594c0` | 2026-07-02 11:09:11 |
 
 ## Terms
 
@@ -154,5 +169,5 @@ The check runs in two steps. [`scripts/check_result_statistics.py`](../scripts/c
 - `Blink.vvp` is excluded from the determinism claim (6.5.3).
 - The contention constants of 6.4.5 are illustrative, and several figures of 6.5.4 and 6.5.5 have no source; the table above names them.
 - A full rerun needs three hosts and an image build; the results of a rerun belong in a separate, dated folder and do not replace these.
-- The integration test report, the harness smoke report, the log of the stress test, the log of the cross-host re-run and the `machine.json` files of the thesis are not in this repository.
+- The integration test report, the harness smoke report, the log of the stress test and the `machine.json` files of the thesis are not in this repository; of the original evidence outside the result folders, only the cross-host control is.
 - `examples/` and the scripts `integration/run_all.sh` and `integration/run_harness_smoke.sh` are supplementary: the thesis does not cite them, and they produced none of its figures.
