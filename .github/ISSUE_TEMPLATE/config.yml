@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+blank_issues_enabled: false
+contact_links:
+  - name: Version of record
+    url: https://doi.org/10.57683/EPUB-3597
+    about: The deposited thesis in the catalogue of TH Köln.
+  - name: Private matters
+    url: https://github.com/mtorun0x7cd/thesis-fentwums-container-extension/blob/main/SECURITY.md
+    about: Credentials, personal data or a security problem go privately, as SECURITY.md describes.

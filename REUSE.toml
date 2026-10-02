@@ -72,3 +72,17 @@ path = [
 precedence = "override"
 SPDX-FileCopyrightText = "OneWare Studio project, https://github.com/one-ware/OneWare"
 SPDX-License-Identifier = "LicenseRef-third-party"
+
+# Documentation without room for a licence comment.
+[[annotations]]
+path = ["CHANGELOG.md", "SECURITY.md", "CONTRIBUTING.md"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# The social card, rendered from social-card.svg by render.sh.
+[[annotations]]
+path = ["docs/social/social-card.png"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "CC-BY-4.0"
