@@ -179,10 +179,11 @@ No image in this repository is edited.
 6. Licence history
 
 Until this repository was recreated with a new history on 2026-10-02, it stated
-the MIT License for all of its content, the thesis sources included, while the
-catalogue record states CC BY 4.0 for the thesis. From the record tag epub-3597
-on, the thesis, the deposited file, the measured data and the documentation are
-licensed under CC BY 4.0 and the code and build files under the MIT License, as
-section 1 states; the material of section 2 is excepted. The author holds all
-rights in what he wrote, and copies of the thesis sources received under the
-MIT License from the earlier repository keep that grant.
+the MIT License for everything its author wrote in it, the thesis sources
+included, while the catalogue record states CC BY 4.0 for the thesis; the mark
+of TH Köln and the submodules were excepted then as now. From the record tag
+epub-3597 on, the thesis, the deposited file, the measured data and the
+documentation are licensed under CC BY 4.0 and the code and build files under
+the MIT License, as section 1 states; the material of section 2 is excepted. The
+author holds all rights in what he wrote, and copies of the thesis sources
+received under the MIT License from the earlier repository keep that grant.
