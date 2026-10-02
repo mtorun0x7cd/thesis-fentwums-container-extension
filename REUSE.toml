@@ -22,7 +22,7 @@ SPDX-License-Identifier = "LicenseRef-third-party"
 # Metadata and documentation without room for a licence comment. CITATION.cff
 # and codemeta.json quote the abstract of the thesis.
 [[annotations]]
-path = ["NOTICE", "CITATION.cff", "codemeta.json"]
+path = ["NOTICE", "CITATION.cff", "codemeta.json", "ERRATA.md"]
 precedence = "closest"
 SPDX-FileCopyrightText = "2026 Mert Torun"
 SPDX-License-Identifier = "CC-BY-4.0"
