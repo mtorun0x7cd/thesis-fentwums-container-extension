@@ -125,9 +125,13 @@ pinned submodules. Licence as in section 1.
   evaluation/integration/Formal_Verification/Blink.sby,
   evaluation/integration/iCE40_Flow/ice40_blink.pcf,
   evaluation/integration/ECP5_Flow/ecp5_blink.lpf,
-  evaluation/integration/run_all.sh,
-  evaluation/integration/run_harness_smoke.sh
+  evaluation/integration/run_all.sh
     Committed by the author to the extension on 2026-06-12 (commit 8080bb1)
+    and moved here on 2026-06-30. No other origin was found. The author's
+    work; MIT.
+
+  evaluation/integration/run_harness_smoke.sh
+    Committed by the author to the extension on 2026-06-28 (commit fdf9324)
     and moved here on 2026-06-30. No other origin was found. The author's
     work; MIT.
 
