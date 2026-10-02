@@ -1,0 +1,76 @@
+{
+  "@context": "https://w3id.org/codemeta/3.0",
+  "@type": "SoftwareSourceCode",
+  "name": "Sources, evaluation apparatus and data of the Master's thesis \"Design and Implementation of a Modular Architecture for the Transparent Integration of Containerized Execution Environments for Heterogeneous Open-Source Binaries in OneWare Studio\"",
+  "description": "The companion repository of the Master's thesis by Mert Torun at TH Köln, 2026. It holds the deposited thesis as the version of record, the LaTeX sources that reproduce its text, the benchmark harness and the evaluation scripts with the data measured on the three test machines, and, as git submodules pinned at the state the thesis describes, the OneWare Studio extension under study and three repositories of the OneWare environment.",
+  "version": "epub-3597",
+  "license": [
+    "https://spdx.org/licenses/MIT",
+    "https://spdx.org/licenses/CC-BY-4.0"
+  ],
+  "codeRepository": "https://github.com/mtorun0x7cd/thesis-fentwums-container-extension",
+  "programmingLanguage": [
+    "TeX",
+    "Python",
+    "C#",
+    "VHDL",
+    "Verilog",
+    "Shell"
+  ],
+  "runtimePlatform": [
+    ".NET 10",
+    "Python 3"
+  ],
+  "softwareRequirements": [
+    "Docker Engine",
+    ".NET SDK 10.0.300 or later",
+    "OSS CAD Suite 2026-06-30",
+    "TeX Live with LuaLaTeX and Biber"
+  ],
+  "developmentStatus": "https://www.repostatus.org/#inactive",
+  "keywords": [
+    "FPGA Toolchains",
+    "Docker Middleware",
+    "Hybrid Strategy Pattern",
+    "Reproducible Builds",
+    "Cross-Platform Architecture",
+    ".NET 10",
+    "Apple Silicon Emulation",
+    "User-ID Mapping",
+    "Version Pinning",
+    "Electronic Design Automation (EDA)",
+    "OneWare Studio"
+  ],
+  "relatedLink": [
+    "https://github.com/FEntwumS/FEntwumS.ContainerExtension"
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0009-0003-7932-9043",
+      "givenName": "Mert",
+      "familyName": "Torun",
+      "affiliation": {
+        "@type": "Organization",
+        "@id": "https://ror.org/014nnvj65",
+        "name": "Technische Hochschule Köln"
+      }
+    }
+  ],
+  "referencePublication": {
+    "@type": "Thesis",
+    "@id": "https://doi.org/10.57683/EPUB-3597",
+    "name": "Design and Implementation of a Modular Architecture for the Transparent Integration of Containerized Execution Environments for Heterogeneous Open-Source Binaries in OneWare Studio",
+    "author": [
+      {
+        "@type": "Person",
+        "@id": "https://orcid.org/0009-0003-7932-9043",
+        "givenName": "Mert",
+        "familyName": "Torun"
+      }
+    ],
+    "datePublished": "2026-09-15",
+    "inLanguage": "en",
+    "license": "https://spdx.org/licenses/CC-BY-4.0"
+  }
+}

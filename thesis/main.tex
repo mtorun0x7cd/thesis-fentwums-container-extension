@@ -1,0 +1,72 @@
+% SPDX-FileCopyrightText: 2026 Mert Torun
+% SPDX-License-Identifier: CC-BY-4.0
+
+\documentclass[12pt, a4paper, oneside]{report}
+
+\input{setup/packages}
+\input{setup/metadata}
+% Document information as the deposited file carries it (title, author,
+% subject, keywords); setup/design sets only the colours of the links. The
+% subject keeps the two hyphens of the deposited file: -{}- stops TeX from
+% joining them into an en dash.
+\hypersetup{
+    pdftitle={\ThesisTitle},
+    pdfauthor={\ThesisAuthor},
+    pdfsubject={Master's Thesis, TH Köln -{}- University of Applied Sciences, 2026},
+    pdfkeywords={FPGA Toolchains; Docker Middleware; Hybrid Strategy Pattern; Reproducible Builds; Cross-Platform Architecture; .NET 10; Apple Silicon Emulation; User-ID Mapping; Version Pinning; Electronic Design Automation (EDA); OneWare Studio}
+}
+\input{setup/design} % Modern Design
+\input{setup/code_styles}
+
+\begin{document}
+
+\pagenumbering{roman}
+\pagestyle{plain}
+\input{frontmatter/titlepage}
+\clearpage
+
+\input{frontmatter/declaration}
+\clearpage
+
+\input{frontmatter/abstract_en}
+\clearpage
+
+
+\input{frontmatter/keywords}
+\clearpage
+
+\tableofcontents
+\clearpage
+
+\listoffigures
+\clearpage
+
+\listoftables
+\clearpage
+
+\lstlistoflistings
+\clearpage
+
+\input{frontmatter/acronyms}
+\clearpage
+
+\clearpage
+\pagenumbering{arabic}
+\pagestyle{fancy}
+
+\include{chapters/01_introduction}
+\include{chapters/02_background}
+\include{chapters/03_stateoftheart}
+\include{chapters/04_concept}
+\include{chapters/05_implementation}
+\include{chapters/06_evaluation}
+\include{chapters/07_conclusion}
+
+\printbibliography[heading=bibintoc, title={References}]
+
+\appendix
+\include{appendices/appendix_a_code}
+\include{appendices/appendix_b_manual}
+\include{appendices/appendix_c_logs}
+
+\end{document}

@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{tex,bib,sh}]
+indent_size = 2
+
+[*.{yml,yaml,json,jsonc,toml,cff,csproj,xml}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+# The thesis sources and the evaluation apparatus keep the bytes they had when
+# the thesis was deposited and measured; an editor must not rewrite them.
+[{thesis/**,evaluation/**}]
+trim_trailing_whitespace = false
+insert_final_newline = unset

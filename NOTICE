@@ -1,0 +1,176 @@
+NOTICE
+
+thesis-fentwums-container-extension: companion repository of the Master's
+thesis "Design and Implementation of a Modular Architecture for the Transparent
+Integration of Containerized Execution Environments for Heterogeneous
+Open-Source Binaries in OneWare Studio" by Mert Torun, TH Köln (Technische
+Hochschule Köln), 2026, published under https://doi.org/10.57683/EPUB-3597.
+
+This file states the licence of each part of the repository, the material of
+third parties, the origin of the hardware designs under evaluation/, the
+licences of the pinned submodules, the declared edits and the licence history.
+REUSE.toml and the SPDX tags in the files give the licence of every file; the
+licence texts are in LICENSES/.
+
+
+1. Licences by path
+
+  thesis/ (the .tex files and     CC BY 4.0. The LaTeX sources of the thesis.
+  bibliography.bib)               Copyright 2026 Mert Torun.
+
+  thesis/figures/th_logo.pdf      LicenseRef-third-party: the mark of TH Köln
+                                  (section 2).
+
+  publication/*.pdf,              CC BY 4.0, the licence of the catalogue
+  publication/SHA256SUMS          record, except the mark of TH Köln on the
+                                  title page (section 2). Copyright 2026
+                                  Mert Torun.
+
+  evaluation/benchmarking_suite/  CC BY 4.0. Measured data: the raw results of
+  results/                        the three test machines and the tables and
+                                  figures aggregate.py derives from them.
+                                  Copyright 2026 Mert Torun.
+
+  evaluation/harness/,            MIT. The benchmark harness, the evaluation
+  evaluation/benchmarking_suite/  and integration scripts, the integration
+  (the scripts),                  fixtures the author wrote and the example
+  evaluation/integration/,        projects (section 3). Copyright 2026
+  evaluation/examples/,           Mert Torun.
+  evaluation/global.json
+
+  six integration fixtures        LicenseRef-third-party: taken from or
+                                  adapted from the project templates of
+                                  OneWare Studio (section 3).
+
+  thesis/latexmk.conf, Makefile,  MIT. Build files, scripts and configuration.
+  scripts/, the dotfiles          Copyright 2026 Mert Torun.
+
+  NOTICE, CITATION.cff,           CC BY 4.0. Documentation and metadata;
+  codemeta.json,                  CITATION.cff and codemeta.json quote the
+  publication/README.md,          abstract of the thesis. Copyright 2026
+  evaluation/docs/, the README    Mert Torun.
+  files under evaluation/
+
+  FEntwumS.ContainerExtension/,   Not part of this repository's files. Each
+  OneWare/,                       is a git submodule pinned at a commit of its
+  OneWare.GhdlExtension/,         own repository and keeps its own licence and
+  FEntwumS.NetlistViewer/         holder (section 4).
+
+
+2. Material of third parties
+
+The licences above cover what the author created. They do not cover the
+material of third parties listed here: this repository does not license it, and
+all rights remain with the holders named.
+
+The mark of TH Köln. thesis/figures/th_logo.pdf is the mark of TH Köln
+(Technische Hochschule Köln), set on the title page of the thesis, and so on
+page 1 of publication/Torun_Containerized_Execution_OneWare.pdf. All rights
+remain with TH Köln.
+
+Six integration fixtures under evaluation/integration/ come from the project
+templates of OneWare Studio (section 3). The rights remain with the OneWare
+Studio project, https://github.com/one-ware/OneWare; its README states the
+GPL 3.0 licence for that repository.
+
+The thesis reproduces no figure of a third party: its only image is the mark
+above, and its figures are the author's own drawings in TikZ.
+
+
+3. Origin of the hardware designs under evaluation/
+
+Recorded on 2026-10-02 from the files, from the history of the extension
+repository in which they were first committed, and by comparison with the
+pinned submodules. Licence as in section 1.
+
+  evaluation/examples/01_full_adder to 08_sync_fifo
+    Eight designs with their testbenches, pin constraints and OneWare project
+    files. Committed by the author to the extension on 2026-06-28
+    (FEntwumS.ContainerExtension, commit 3fc16ce) and moved here on
+    2026-06-30. No other origin was found: the files carry no notice of one,
+    and none of them occurs in the pinned submodules. The author's work; MIT.
+
+  evaluation/integration/VHDL_Blink/VHDL_Blink.vhd,
+  evaluation/integration/VHDL_Blink/VHDL_Blink_tb.vhd
+    The OneWare Studio template BlinkSimulationVhdl with the project name
+    VHDL_Blink filled in, identical up to white space (OneWare at a3a5a79,
+    src/OneWare.Vhdl/Assets/Templates/BlinkSimulationVhdl/).
+    LicenseRef-third-party.
+
+  evaluation/integration/Verilog_Blink/Verilog_Blink.v
+    The OneWare Studio template BlinkVerilog with the module name
+    Verilog_Blink filled in (OneWare at a3a5a79,
+    src/OneWare.Verilog/Assets/Templates/BlinkVerilog/).
+    LicenseRef-third-party.
+
+  evaluation/integration/iCE40_Flow/ice40_blink.v,
+  evaluation/integration/ECP5_Flow/ecp5_blink.v,
+  evaluation/integration/Formal_Verification/Blink.v
+    Adapted from the same template: the module is renamed; ecp5_blink.v
+    drives the LED from bit 23 of the counter instead of bit 20;
+    Formal_Verification/Blink.v adds a formal assertion. ice40_blink.v and
+    ecp5_blink.v are the input files of the measured workloads, and their
+    SHA-256 stands in every result file. LicenseRef-third-party.
+
+  evaluation/integration/Verilog_Blink/Verilog_Blink_tb.v,
+  evaluation/integration/Verilog_Blink/sim_main.cpp,
+  evaluation/integration/Formal_Verification/Blink.sby,
+  evaluation/integration/iCE40_Flow/ice40_blink.pcf,
+  evaluation/integration/ECP5_Flow/ecp5_blink.lpf,
+  evaluation/integration/run_all.sh,
+  evaluation/integration/run_harness_smoke.sh
+    Committed by the author to the extension on 2026-06-12 (commit 8080bb1)
+    and moved here on 2026-06-30. No other origin was found. The author's
+    work; MIT.
+
+
+4. Pinned submodules
+
+The four submodules are not copied into this repository: a clone holds only
+the commit each one is pinned at. Their licences, as their own licence files
+state them at that commit:
+
+  FEntwumS.ContainerExtension     https://github.com/FEntwumS/FEntwumS.ContainerExtension
+    5fa2f5f, 2026-07-02           MIT License, Copyright 2025-2026 Mert Torun
+                                  (License.md).
+
+  FEntwumS.NetlistViewer          https://github.com/FEntwumS/FEntwumS.NetlistViewer
+    2ef4d51, 2026-06-26           MIT License, Copyright 2024-2026 TH Koeln
+                                  (License.md).
+
+  OneWare.GhdlExtension           https://github.com/FEntwumS/OneWare.GhdlExtension
+    01d1406, 2026-03-26           MIT License for the extension, Copyright 2023
+                                  Protop Solutions UG (License.md). The GNU GPL
+                                  version 2 that License.md names applies to
+                                  GHDL itself, which the submodule does not
+                                  contain.
+
+  OneWare                         https://github.com/FEntwumS/OneWare
+    a3a5a79, 2026-06-25           GNU GPL version 3 for the repository
+                                  (LICENSE; README). The package
+                                  OneWare.Essentials, which the benchmark
+                                  harness references, declares the MIT License
+                                  (src/OneWare.Essentials/OneWare.Essentials.csproj).
+
+
+5. Declared edits
+
+publication/Torun_Containerized_Execution_OneWare.pdf
+  None. The file is byte-identical with the file the catalogue record serves.
+
+thesis/figures/th_logo.pdf
+  None. The file as the thesis uses it.
+
+No image in this repository is edited.
+
+
+6. Licence history
+
+Until this repository was recreated with a new history on 2026-10-02, it stated
+the MIT License for all of its content, the thesis sources included, while the
+catalogue record states CC BY 4.0 for the thesis. From the record tag epub-3597
+on, the thesis, the deposited file, the measured data and the documentation are
+licensed under CC BY 4.0 and the code and build files under the MIT License, as
+section 1 states; the material of section 2 is excepted. The author holds all
+rights in what he wrote, and copies of the thesis sources received under the
+MIT License from the earlier repository keep that grant.

@@ -1,0 +1,12 @@
+# Build and simulation artifacts
+build/
+work/
+*.cf
+*.o
+e~*
+*.ghw
+*.vcd
+*.fst
+*.json
+*.asc
+*.bit

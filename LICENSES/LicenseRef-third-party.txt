@@ -1,0 +1,13 @@
+Material of third parties
+
+This text belongs to the identifier LicenseRef-third-party. The identifier marks
+material of third parties that this repository contains but does not license.
+
+This repository grants no rights in such material. It is not covered by the MIT
+License or by the Creative Commons Attribution 4.0 International licence that
+apply to other files of this repository. All rights remain with the holders that
+the file NOTICE names for each such file, together with the source of the
+material.
+
+This text states no terms on behalf of those holders. Whether and how the
+material may be used is for them to decide.

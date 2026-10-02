@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+# Output of the Makefile (OUT ?= build).
+/build/
+
+# A LaTeX run inside thesis/ without the Makefile.
+thesis/**/*.aux
+thesis/**/*.bbl
+thesis/**/*.bcf
+thesis/**/*.blg
+thesis/**/*.fdb_latexmk
+thesis/**/*.fls
+thesis/**/*.lof
+thesis/**/*.log
+thesis/**/*.lol
+thesis/**/*.lot
+thesis/**/*.out
+thesis/**/*.run.xml
+thesis/**/*.synctex.gz
+thesis/**/*.toc
+/thesis/main.pdf
+
+# .NET build output of the harness.
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editors and operating systems
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,74 @@
+version = 1
+
+# Files without room for an SPDX comment, or whose bytes stay as they were
+# deposited or measured, are annotated here. Where several annotations match a
+# file, the last one counts. NOTICE gives the same licences in prose.
+
+# The deposited thesis and its checksum file.
+[[annotations]]
+path = ["publication/Torun_Containerized_Execution_OneWare.pdf", "publication/SHA256SUMS"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "CC-BY-4.0"
+SPDX-FileComment = "CC BY 4.0 is the licence of the catalogue record, https://doi.org/10.57683/EPUB-3597. It does not cover the mark of TH Köln on the title page; see NOTICE."
+
+# The mark of TH Köln on the title page of the thesis.
+[[annotations]]
+path = ["thesis/figures/th_logo.pdf"]
+precedence = "override"
+SPDX-FileCopyrightText = "TH Köln (Technische Hochschule Köln)"
+SPDX-License-Identifier = "LicenseRef-third-party"
+
+# Metadata and documentation without room for a licence comment. CITATION.cff
+# and codemeta.json quote the abstract of the thesis.
+[[annotations]]
+path = ["NOTICE", "CITATION.cff", "codemeta.json"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# The submodule configuration.
+[[annotations]]
+path = [".gitmodules"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "MIT"
+
+# The evaluation apparatus as it was measured: scripts, harness, integration
+# scripts and fixtures, and the example projects. Kept byte for byte, so the
+# licence stands here and not in the files.
+[[annotations]]
+path = ["evaluation/**"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "MIT"
+
+# The documentation of the apparatus.
+[[annotations]]
+path = ["evaluation/docs/**", "evaluation/**/README.md"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Measured data: the raw results of the three test machines, and the tables
+# and figures that aggregate.py derives from them.
+[[annotations]]
+path = ["evaluation/benchmarking_suite/results/**"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Mert Torun"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Integration fixtures taken from the Blink project templates of OneWare Studio,
+# or adapted from them; NOTICE, section 3, names the source of each.
+[[annotations]]
+path = [
+  "evaluation/integration/VHDL_Blink/VHDL_Blink.vhd",
+  "evaluation/integration/VHDL_Blink/VHDL_Blink_tb.vhd",
+  "evaluation/integration/Verilog_Blink/Verilog_Blink.v",
+  "evaluation/integration/iCE40_Flow/ice40_blink.v",
+  "evaluation/integration/ECP5_Flow/ecp5_blink.v",
+  "evaluation/integration/Formal_Verification/Blink.v",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "OneWare Studio project, https://github.com/one-ware/OneWare"
+SPDX-License-Identifier = "LicenseRef-third-party"

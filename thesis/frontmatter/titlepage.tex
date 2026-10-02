@@ -1,0 +1,37 @@
+% SPDX-FileCopyrightText: 2026 Mert Torun
+% SPDX-License-Identifier: CC-BY-4.0
+
+\begin{titlepage}
+    % Vertical Branding Bar
+    \begin{tikzpicture}[remember picture,overlay]
+        \fill[thred] (current page.north west) rectangle ([xshift=2cm]current page.south west);
+    \end{tikzpicture}
+
+    % Logo Top Right (Absolute Positioning)
+    \begin{textblock}{50}(150,10) 
+        \includegraphics[width=50mm]{figures/th_logo}
+    \end{textblock}
+    \vspace{3cm}
+
+    % Left Aligned Content ("1.0 Grade" Modern Look)
+    \begin{flushleft}
+        \sffamily
+        
+        \vspace{1cm}
+        {\large \scshape Master Thesis \par}
+        \vspace{0.5cm}
+        
+        % Title with TH-Red Accent
+        {\Huge \bfseries \color{thred} \ThesisTitle \par}
+        \vspace{2cm}
+
+        {\Large \textbf{\ThesisAuthor} \par}
+
+        \vfill
+        
+        % Metadata Block
+        \textbf{Institution:}\\ \University\\ \Faculty \\[1em]
+        \textbf{Date:} \ThesisDate \\[1em]
+        \textbf{Supervisors:}\\ \SupervisorA\\ \SupervisorB
+    \end{flushleft}
+\end{titlepage}

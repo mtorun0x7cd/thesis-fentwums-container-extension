@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+# Text files are stored with LF line endings.
+* text=auto eol=lf
+
+*.tex      text eol=lf diff=tex
+*.bib      text eol=lf diff=bibtex
+*.md       text eol=lf diff=markdown
+*.py       text eol=lf diff=python
+*.sh       text eol=lf
+*.cs       text eol=lf
+*.csproj   text eol=lf
+*.json     text eol=lf
+*.jsonc    text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.toml     text eol=lf
+*.cff      text eol=lf
+*.csv      text eol=lf
+*.svg      text eol=lf
+*.txt      text eol=lf
+
+# Binary files.
+*.pdf   binary
+*.png   binary
+
+# The version of record and its checksums are stored byte for byte.
+publication/** -text -diff
+
+# Tables and figures that aggregate.py derives from the raw results beside them.
+# The raw measurements (results/<platform>/*.json) are data and stay unmarked.
+evaluation/benchmarking_suite/results/summary.csv     linguist-generated
+evaluation/benchmarking_suite/results/summary.md      linguist-generated
+evaluation/benchmarking_suite/results/determinism.md  linguist-generated
+evaluation/benchmarking_suite/results/figures/**      linguist-generated
