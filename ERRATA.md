@@ -4,7 +4,7 @@ This file lists the known errors of the Master's thesis "Design and Implementati
 
 The section "Errata" lists errors of the author's text. The section "Properties of the record and the deposited file" lists what is wrong or missing in the catalogue record and in the file as a container, and the section "Updates" lists web addresses printed in the work that no longer work or have moved. The field "Quoted text" quotes the deposited file verbatim. A quotation may begin or end within a sentence; a line break inside it is given as a space, and a hyphen at the end of a line is kept only where it belongs to the word. Subscripts appear on the base line, as the file's text layer gives them (UIDcontainer for UID with the subscript container). Page numbers are given as printed and as PDF page: printed pages i to xiv are PDF pages 2 to 15, and printed page n of the main text is PDF page n + 15.
 
-To report an error, write to info@mtorun0x7cd.com, giving the page and the passage.
+To report an error, open an issue with the form Correction or write to info@mtorun0x7cd.com, giving the page and the passage.
 
 ## Errata
 
