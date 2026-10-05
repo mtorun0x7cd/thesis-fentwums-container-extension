@@ -108,7 +108,7 @@ The SHA-256 of `benchmark.py` stands in every Linux and Windows result file; the
 
 The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the three machines ran 10.0.301) and Python 3 on each host, and the submodule `FEntwumS.ContainerExtension`. From the root of a clone:
 
-1. Build the toolchain image. Its inputs are pinned in `FEntwumS.ContainerExtension/docker/oss-cad-suite/Dockerfile`: the Ubuntu base image by digest (`sha256:53958ec7…`) and the oss-cad-suite release 2026-06-30 (`oss-cad-suite-linux-x64-20260630.tgz`) by SHA-256 (`28f10189…`).
+1. Build the toolchain image. Its inputs are pinned in `FEntwumS.ContainerExtension/docker/oss-cad-suite/Dockerfile`: the Ubuntu base image by digest (`sha256:53958ec7…`) and the oss-cad-suite release 2026-06-30 (`oss-cad-suite-linux-x64-20260630.tgz`) by SHA-256 (`28f10189…`). The build downloads that archive from the release of YosysHQ/oss-cad-suite-build; it is 719,033,749 bytes, the size the GitHub release API reported for it on 2026-09-24.
 
    ```sh
    git submodule update --init FEntwumS.ContainerExtension
