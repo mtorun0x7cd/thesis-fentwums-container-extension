@@ -11,23 +11,31 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 - `README.md`: the thesis, its publication, a summary of the work, the contents, the pinned software, how to reproduce the thesis and the evaluation, the limitations, the corrections, the citation and the licences.
 - `ERRATA.md`: the known errors of the deposited thesis, the properties of its catalogue record and of the deposited file, and the web addresses of the thesis that have moved.
 - `evaluation/README.md`: every quantitative statement of Chapter 6 with its evidence and kind, the provenance of the results of the three machines, the terms and the rerun recipe.
-- `evaluation/harness/packages.lock.upstream-1884317.json`: the restore lock file of the harness as the extension repository held it at commit `1884317`, the state of the macOS measurement on 2026-06-30, kept as evidence. Restore does not read it, and the harness has no lock file of its own yet.
+- `evaluation/harness/packages.lock.upstream-1884317.json`: the restore lock file of the harness as the extension repository held it at commit `1884317`, the state of the macOS measurement on 2026-06-30, kept as evidence. Restore does not read it.
+- `evaluation/harness/packages.lock.json`, the restore lock file of the harness, and the property `RestorePackagesWithLockFile` in its project file. Both postdate the measurements: the lock file was written on 2026-10-05 with the .NET SDK 10.0.301, the SDK of the measurements, and `dotnet restore --locked-mode` of the harness passes against it under that SDK and under 10.0.401.
 - `evaluation/benchmarking_suite/results/supplementary/shared-image-control/`: the original files of the cross-host control of Section 6.5.3, in which the image of Machine 3 ran unchanged on Machine 1 on 2026-07-02. They were found in 2026 and are added unchanged; `evaluation/README.md` gives their bytes, SHA-256 and dates.
 - `scripts/check_result_statistics.py`, which recomputes the statistics of every result file from its raw times with the functions of `benchmark.py`; `make aggregate-check` runs it before it recomputes the tables.
-- `SECURITY.md`, `CONTRIBUTING.md`, the correction form, the workflows, the social card and the scripts that check the metadata and the links.
+- `SECURITY.md`, `CONTRIBUTING.md`, the correction form, the workflows, the opt-in pre-commit hook in `.githooks/`, which scans staged changes with `gitleaks git --staged`, the social card and the scripts that check the metadata and the links.
 
 ### Changed
 
-- `evaluation/docs/` and `evaluation/benchmarking_suite/README.md` name the paths of this repository instead of those of the extension repository, pass the image of the measurement (`fentwums/oss-cad-suite:2026-06-30`) explicitly, and no longer say that every number of the thesis comes from this code or that the toolchain image is published.
-- `evaluation/examples/README.md` marks the example projects as supplementary.
-- `Makefile`: `aggregate-check` first recomputes the statistics of the result files; no target writes Python's bytecode cache into the source tree; `harness` builds in `evaluation/`, so that `evaluation/global.json` selects the SDK, as the harness job of `evaluation.yml` does.
 - `CITATION.cff` and `codemeta.json` carry the version 1.1.0.
-- `codemeta.json` types the thesis as `schema:Thesis`: the CodeMeta 3.0 context defines no term `Thesis`, so the bare name it carried at the record tag did not expand. `scripts/check_metadata.py` checks the type.
-- `scripts/compare_pdf_text.py` writes the soft hyphen it drops as an escape sequence, so the script is ASCII; the comparison is unchanged.
-- `NOTICE` dates `evaluation/integration/run_harness_smoke.sh` from its own first commit in the extension (2026-06-28), not from that of the other fixtures (2026-06-12).
-- `publication/README.md` names the one paragraph whose line breaks differ in a build of the tag (p. 22, PDF p. 37), where the sources tie a citation to the preceding word.
-- `publication/README.md` compares the digest the REST API reports for the PDF of the release without its algorithm prefix, so that it can equal its line in `SHA256SUMS`.
-- The opt-in pre-commit hook in `.githooks/` scans staged changes with `gitleaks git --staged`, which replaces the deprecated `gitleaks protect`.
+
+### Fixed
+
+Statements in files that the record tag `epub-3597` holds, corrected here; the tag keeps them as they were:
+
+- `CITATION.cff` and `codemeta.json`: the submodules are pinned at their state when the thesis was submitted; the tag says at the state the thesis describes, though the thesis names no commit of them.
+- `codemeta.json`: the reference publication is typed `schema:Thesis` and its language is given as `schema:inLanguage`, because the CodeMeta 3.0 context defines neither `Thesis` nor `inLanguage`; and the software requirements are `SoftwareApplication` nodes with a name, because the context reads a plain string there as an IRI, with the SDK as `evaluation/global.json` allows it, 10.0.300 or any later 10.0 SDK, where the tag says 10.0.300 or later.
+- `NOTICE` and `REUSE.toml`: the README and `CITATION.cff` quote the abstract of the thesis, and `CITATION.cff` and `codemeta.json` its title and printed keywords; the tag says that `CITATION.cff` and `codemeta.json` quote the abstract.
+- `NOTICE`: `evaluation/integration/run_harness_smoke.sh` entered the extension on 2026-06-28, not with the other fixtures on 2026-06-12; the SHA-256 of `ice40_blink.v` and `ecp5_blink.v` stands in the result files of the two synthesis workloads, not in every result file; and the earlier repository stated the MIT License for what its author wrote, the mark of TH Köln and the submodules excepted, not for all of its content.
+- `publication/README.md`: the deposited file was processed outside this repository, among other things linearised and given new metadata, where the tag names a single step; one paragraph on p. 22 (PDF p. 37) breaks its lines differently in a build of the tag, because the sources tie its closing citation to the preceding word; the digest that the REST API reports for an asset carries an algorithm prefix, which the comparison with `SHA256SUMS` now strips; and CI compares the text on pushes and pull requests to `main` and when started by hand, not on every push.
+- `scripts/compare_pdf_text.py`: its docstring describes the processing of the deposited file as `publication/README.md` does; the soft hyphen it drops is written as an escape sequence, so the script is ASCII, and the comparison is unchanged.
+- `Makefile`: two builds of the same sources give the same bytes only in one directory, because the PDF identifier depends on it; no target writes Python's bytecode cache into the source tree any more, which the comment says is not written to; and `harness` builds in `evaluation/`, so that `evaluation/global.json` selects the SDK.
+- `evaluation/docs/evaluation.md`: the measured numbers of Chapter 6 come from this code, not every number of the thesis; it names the paths of this repository, passes the image of the measurement (`fentwums/oss-cad-suite:2026-06-30`) explicitly and runs the `dotnet` commands in `evaluation/`; output is constrained to the benchmarking suite directory, not to the repository root; the integration report of the thesis is not in this repository; the Linux and Windows result files record no harness commit and the files of the cross-host control one that is in no history, so they do not fix the repository state; and the measurement hygiene is given as recommendations, beside what the thesis records, not as the controls behind the reported confidence intervals.
+- `evaluation/docs/amd64-native-baseline-protocol.md`: the image is built for `linux/amd64` only and is on no registry, not published, and its limitations are linked at the pinned commit; it names the paths of this repository and runs the `dotnet` command in `evaluation/`; the macOS figures are the marginal cost of the extension, strategy against CLI, not an emulated upper bound; the result files record native versions of Yosys and Icarus Verilog only, not the parity conditions of every measurement; and the parity check rejected the native Windows toolchain.
+- `evaluation/benchmarking_suite/README.md`: the measurement used `fentwums/oss-cad-suite:2026-06-30`, built locally and on no registry, not `fentwums/oss-cad-suite:latest`, and the native baseline is run with `--image` as well; it names the SDK the harness needs; and the overhead reported for the macOS host is the strategy-against-CLI difference under the same emulation, not a figure that reflects emulation.
+- `evaluation/examples/README.md`: the example projects are supplementary; the thesis does not cite them, and none of its figures comes from them.
 
 ## [epub-3597] - 2026-10-02
 
@@ -35,7 +43,7 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 
 - `publication/Torun_Containerized_Execution_OneWare.pdf`, the deposited thesis, byte-identical with the file behind <https://doi.org/10.57683/EPUB-3597>: 557,042 bytes, SHA-256 `f7cb839334f73d2df225a323d0d0473181055a6041cdbca8233f33a8f0c74f93`.
 - `thesis/`, the LaTeX sources, which reproduce the text of the deposited file, not its bytes. Sources reconciled in 2026 with the deposited text where the committed sources had diverged: section 7.3 third item, four hyphens. The sources carry the licence of the record, CC BY 4.0, and a build carries the title, author, subject, keywords and creation date of the deposited file.
-- `evaluation/`, the benchmark harness, the evaluation scripts, the measured results of the three test machines, the workload designs and the supplementary examples, as they were measured.
+- `evaluation/`, the benchmark harness, the evaluation scripts, the measured results of the three test machines and the workload designs, as they were measured, and the supplementary examples.
 - The submodules `FEntwumS.ContainerExtension`, `OneWare`, `OneWare.GhdlExtension` and `FEntwumS.NetlistViewer`, pinned at their state when the thesis was submitted (2026-07-02).
 - `Makefile` and `scripts/compare_pdf_text.py`, which build the thesis and compare its text with the deposited file.
 - `CITATION.cff`, `codemeta.json`, `NOTICE`, `REUSE.toml` and the licence texts.
