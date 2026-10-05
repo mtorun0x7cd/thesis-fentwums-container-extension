@@ -375,7 +375,7 @@ Torun, M. (2026). _Design and implementation of a modular architecture for the t
 BibTeX:
 
 ```bibtex
-@mastersthesis{Torun2026,
+@mastersthesis{Torun2026Containerized,
   author = {Torun, Mert},
   title  = {Design and Implementation of a Modular Architecture for the Transparent Integration of Containerized Execution Environments for Heterogeneous Open-Source Binaries in {OneWare Studio}},
   school = {Technische Hochschule Köln},
