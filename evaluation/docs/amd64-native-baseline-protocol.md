@@ -2,7 +2,7 @@
 
 This protocol specifies how to collect the **valid** native-versus-container execution-overhead
 baseline for the overhead study. It complements [the evaluation methodology](evaluation.md): that
-chapter defines the workload matrix, the three backends, and the statistics; this one fixes the single
+document defines the workload matrix, the three backends, and the statistics; this one fixes the single
 condition under which a *native* baseline is sound: the native toolchain and the containerized
 toolchain must be the **same build on the same architecture, with no emulation in between**.
 
@@ -68,8 +68,8 @@ baseline of the thesis is that of the Linux host, Machine 2 (thesis, Sections 6.
 
 ## Running the baseline
 
-Per the measurement-hygiene controls in [evaluation.md](evaluation.md) (quiesce the host, pin the CPU
-governor to `performance`, keep the machine on AC power), then, on each amd64 host:
+Following the measurement-hygiene recommendations in [evaluation.md](evaluation.md) (quiesce the host,
+pin the CPU governor to `performance`, keep the machine on AC power), then, on each amd64 host:
 
 ```bash
 # Build the real-strategy harness once per machine, in evaluation/, where

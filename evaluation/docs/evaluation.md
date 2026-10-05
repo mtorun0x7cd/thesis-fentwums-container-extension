@@ -1,6 +1,6 @@
 # Evaluation Methodology
 
-This chapter specifies the empirical evaluation of the transparent-integration
+This document specifies the empirical evaluation of the transparent-integration
 architecture. The central claim under test is functional: the
 `IToolExecutionStrategy` hybrid runs FPGA-tool execution inside a container
 without altering the result the user would otherwise obtain natively.
@@ -185,10 +185,15 @@ without external notes. `export_json` (`SCHEMA_VERSION = 2`) records:
   architecture (`get_cpu_model`, `get_total_ram_gb`, `get_docker_info`).
 - **Image identity.** The image reference and its resolved digest
   (`get_image_digest`), pinning the exact toolchain binaries that ran.
-- **Input and harness identity.** SHA-256 of every workload input file
+- **Input and harness identity.** The SHA-256 of every file named on the
+  workload's command line that exists when the result is written
   (`hash_input_files`), the SHA-256 of `benchmark.py` itself, and the short git
-  commit of the harness (`get_git_commit`), so the inputs, the measurement code
-  and the repository state are all fixed.
+  commit of the checkout that holds `benchmark.py` (`get_git_commit`). Where git
+  answers, the inputs, the measurement code and the repository state are fixed.
+  The Linux and Windows result files of the thesis record no commit (`null`),
+  and the files of the cross-host control record `7828e51`, a commit in neither
+  the history of this repository nor that of the extension, so for them the
+  repository state is not fixed.
 - **Output artifacts.** SHA-256 of each produced artifact (`output_artifacts_sha256`),
   the basis of the cross-machine determinism matrix.
 - **Separated image-pull cost.** With `--measure-pull`, the image is removed and
@@ -204,13 +209,17 @@ to write a path that does not begin with it.
 ### Measurement hygiene
 
 Because the workloads are short and the per-invocation container floor is small, host
-noise is the dominant residual variance. Each measurement machine should be quiesced
-before the run: pin the CPU frequency governor to `performance` (Linux:
+noise is the dominant residual variance. Before a run, it is recommended to quiesce each
+measurement machine: pin the CPU frequency governor to `performance` (Linux:
 `cpupower frequency-set -g performance`), disable turbo/thermal-throttling variability
 where possible, close background workloads, and keep the machine on AC power with thermal
 headroom. Where the runtime permits, pin the harness to dedicated cores (`taskset`/core
-affinity). These conditions, together with the recorded CPU model, core count and Docker
-version in each result file, are the controls behind the reported confidence intervals.
+affinity). The result files record the CPU model, the core count and the Docker version,
+not these settings. The thesis records the `performance` CPU governor on Machine 2
+(Section 6.2.1), the Windows "High Performance" power plan for the timed run on Machine 3
+(note to Table 6.3) and an idle check of the system load before the run on Machine 1
+(Section 6.3.2); it records no clock frequencies, power states or core placement
+([`ERRATA.md`](../../ERRATA.md), E-016 and E-017).
 
 ### One command per machine
 
@@ -277,7 +286,7 @@ The three axes are read against three distinct expectations.
   image-pull cost is reported separately and must not be conflated with per-run
   overhead. The measured magnitudes are in `results/summary.csv` (per-platform
   means, intervals and overhead factors) rather than reproduced here, so that this
-  chapter remains valid as the data is regenerated.
+  document remains valid as the data is regenerated.
 
 The overhead figures are supporting evidence for the viability of the
 architecture, not its contribution. The contribution is that the same tool
