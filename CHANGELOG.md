@@ -20,6 +20,7 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 ### Changed
 
 - `CITATION.cff` and `codemeta.json` carry the version 1.1.0.
+- `evaluation/README.md` quotes the run records of Machines 2 and 3 that the author keeps, each with its SHA-256: the states of the extension and of the evaluation that ran, the host cards with the version-parity checks, and the notes of both Windows runs; the records themselves stay outside the repository.
 
 ### Fixed
 
