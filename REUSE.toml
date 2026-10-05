@@ -35,9 +35,10 @@ precedence = "closest"
 SPDX-FileCopyrightText = "2026 Mert Torun"
 SPDX-License-Identifier = "MIT"
 
-# The evaluation apparatus as it was measured: scripts, harness, integration
-# scripts and fixtures, and the example projects. Kept byte for byte, so the
-# licence stands here and not in the files.
+# The evaluation apparatus: scripts, harness, integration scripts and fixtures,
+# and the example projects. The licence stands here and not in the files, so
+# that no header changes them; evaluation/README.md lists the scripts and
+# figures that changed after the measurements.
 [[annotations]]
 path = ["evaluation/**"]
 precedence = "closest"

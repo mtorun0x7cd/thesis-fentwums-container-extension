@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # Evaluation apparatus
 
-This folder holds what Chapter 6 of the thesis measured and how: the benchmark harness, the evaluation scripts, the raw results of the three test machines, the tables and figures derived from them, the original files of the cross-host control of Section 6.5.3, the hardware designs of the measured workloads, and two supplementary sets of designs. The scripts and the results are kept as they ran; where the documentation of 2026-06-30 had gone stale, it is corrected, and every correction is in the documentation only.
+This folder holds what Chapter 6 of the thesis measured and how: the benchmark harness, the evaluation scripts, the raw results of the three test machines, the tables and figures derived from them, the original files of the cross-host control of Section 6.5.3, the hardware designs of the measured workloads, and two supplementary sets of designs. The result files are kept as the runs wrote them. Not every script is the state that ran: Machine 1 ran an earlier state of `benchmark.py` and `run_evaluation.py`, `aggregate.py` and `integration/run_harness_smoke.sh` changed after the measurements, and the figures were rewritten; [the scripts and figures after the measurements](#the-scripts-and-figures-after-the-measurements) lists each with its dates. Where the documentation of 2026-06-30 had gone stale, it is corrected in the documentation, not in the scripts.
 
 | Path | Content | In the thesis | Licence |
 | --- | --- | --- | --- |
@@ -75,7 +75,23 @@ The pinned commit `5fa2f5f` is the state of the extension when the thesis was su
 
 The SHA-256 of `benchmark.py` stands in every Linux and Windows result file; the file stays unchanged so that the value can be checked. Every result file records under `experiment.input_file_sha256` the SHA-256 of each file named on its command line that existed when the result was written: the design, netlist, configuration or constraint file the workload reads and, where the command line names it, the file the workload writes. The `lifecycle_floor` files record none.
 
-Outside ASCII, the scripts of this folder hold only five em dashes in comments and strings of `benchmark.py` and ten em dashes and one ellipsis in comments and output strings of `aggregate.py`. They are kept as measured: both files are the measured code, the result files record the SHA-256 of `benchmark.py`, and `summary.md` carries byte for byte the em dashes that `aggregate.py` writes.
+Outside ASCII, the scripts of this folder hold only five em dashes in comments and strings of `benchmark.py` and ten em dashes and one ellipsis in comments and output strings of `aggregate.py`. They stay as they are: `benchmark.py` is the code that ran on Machines 2 and 3, whose result files record its SHA-256; `summary.md` carries byte for byte the em dashes that `aggregate.py` writes; and the ellipsis stands in a comment that was added to `aggregate.py` after the measurements, which the next section lists.
+
+### The scripts and figures after the measurements
+
+The result files record which `benchmark.py` ran, by its SHA-256, and the result files of Machine 1 also the commit of its checkout; nothing records the state of the other scripts. Compared with these records, with the upstream history of the extension and with the history of the earlier repository of this thesis, which first committed the apparatus on 2026-07-12:
+
+| File | What ran | Changed after the measurements |
+| --- | --- | --- |
+| `benchmarking_suite/benchmark.py` | Machine 1: the file at upstream `1884317` (SHA-256 `62b49f26…`), which differs from the committed one in seven lines of path handling. Machines 2 and 3 and the cross-host control: the committed file (`05c43db4…`) | no |
+| `benchmarking_suite/run_evaluation.py` | Machine 1: the file at `1884317`, which differs from the committed one in two lines, an unused variable and the folder that a comment names. Machines 2 and 3: not recorded | no |
+| `benchmarking_suite/aggregate.py` | Not recorded. The file is the same at `1884317`, at the move and in the first commit of the earlier repository, and the committed file writes the committed tables byte for byte (`make aggregate-check`) | on 2026-07-15, in the earlier repository (commit `4629221`): a comment, which holds the file's one ellipsis, and the argument `metadata={"Software": None}` in the call that saves the figures; the tables do not change |
+| `results/figures/*.png` | Machine 1: rendered on 2026-06-30 from the macOS results (upstream `144d703`). Machines 2 and 3: first committed on 2026-07-12 | rewritten on 2026-07-15 in the same commit, 74,761 to 76,246 bytes instead of 63,183 to 64,659: the same pixels, without the text entry `Software` and the resolution entry `pHYs` that the earlier files carried |
+| the result files and tables under `results/` | written by the runs and by `aggregate.py` | no: the 24 result files and the three tables equal the first commit of the earlier repository, and the eight macOS result files equal upstream `144d703`, the commit that followed the run of Machine 1 |
+| `integration/run_all.sh` | no run of it is cited in the thesis | no: byte-identical with `1884317` |
+| `integration/run_harness_smoke.sh` | no run of it is cited in the thesis | on 2026-09-07, in the earlier repository (commit `57231c7`): the paths of this layout, a check that names a missing path, and a build phase of its own for the harness |
+| `harness/Program.cs`, `harness/link.xml` | Machine 1: the state of `1884317`. Machines 2 and 3: not recorded | no: byte-identical with `1884317` |
+| `harness/ContainerBenchmarkHarness.csproj` | as for `Program.cs` | the form of the package versions and the path of the project reference, as first committed on 2026-07-12, and the property `RestorePackagesWithLockFile` since 2026-10-05 |
 
 ### The cross-host control
 
