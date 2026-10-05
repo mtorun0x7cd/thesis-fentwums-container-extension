@@ -1,4 +1,4 @@
-# Evaluation Methodology
+# Evaluation methodology
 
 This document specifies the empirical evaluation of the transparent-integration
 architecture. It tests that the `IToolExecutionStrategy` hybrid runs FPGA tools
@@ -26,7 +26,7 @@ written. The relevant sources are:
 | Real strategy code path (the OneWare path) | `evaluation/harness/Program.cs` |
 | Headless toolchain coverage smoke test | `evaluation/integration/run_all.sh` |
 
-## Evaluation Axes
+## Evaluation axes
 
 The evaluation is organised along three independent axes. Each isolates one
 property of the architecture and is measured by a distinct part of the harness.
@@ -77,7 +77,7 @@ absolute seconds and as a relative factor (`relative_overhead_x`), and the
 one-time cost of acquiring the image is measured separately so it does not
 contaminate the steady-state figure.
 
-## Experimental Design
+## Experimental design
 
 ### Cross-platform matrix
 
@@ -161,7 +161,7 @@ with Cohen's *d* and a 95 % confidence interval, exported as `cli_vs_dotnet` in 
 comparison block. Needing no native baseline, it is available on every host,
 including those where no native toolchain is installed.
 
-## Statistical Method
+## Statistical method
 
 The statistics are implemented in `benchmark.py` with the Python standard library
 only; no third-party numerical dependency is introduced.
@@ -227,7 +227,7 @@ without external notes. `export_json` (`SCHEMA_VERSION = 2`) records:
 All output is constrained to the benchmarking suite directory: `export_json` refuses
 to write a path that does not begin with it.
 
-## How to Reproduce
+## How to reproduce
 
 ### Measurement hygiene
 
@@ -289,7 +289,7 @@ the tables do not.
 | `results/summary.md` | Human-readable per-platform table: mean (95% CI), CV and overhead factor per workload and backend, headed by the machine's CPU, RAM, core count and Docker version. |
 | `results/figures/*.png` | Per-platform grouped bar charts of mean execution time with 95% CI error bars (strategy backend), generated only when `matplotlib` is installed. |
 
-## Interpreting the Results
+## Interpreting the results
 
 The three axes are read against three distinct expectations.
 

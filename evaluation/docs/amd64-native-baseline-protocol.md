@@ -1,4 +1,4 @@
-# Native-vs-Container Baseline Protocol (linux/amd64, windows/amd64)
+# Native-vs-container baseline protocol (linux/amd64, windows/amd64)
 
 This protocol specifies how to collect the **valid** native-versus-container execution-overhead
 baseline for the overhead study. It complements [the evaluation methodology](evaluation.md): that
