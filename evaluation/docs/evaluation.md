@@ -1,11 +1,15 @@
 # Evaluation Methodology
 
 This document specifies the empirical evaluation of the transparent-integration
-architecture. The central claim under test is functional: the
-`IToolExecutionStrategy` hybrid runs FPGA-tool execution inside a container
-without altering the result the user would otherwise obtain natively.
-Execution overhead and output reproducibility are supporting evidence and are
-reported as such, not as the contribution itself.
+architecture. It tests that the `IToolExecutionStrategy` hybrid runs FPGA tools
+inside a container. In the measurement for the thesis, the seven workloads ran
+to success in the container on the three hosts, and the six FPGA artifacts of
+two designs were byte-identical across the hosts and across two builds of the
+image. No output of a container run was compared with that of a native run, so
+the evaluation does not show that the container leaves the result of a tool
+unchanged against native execution ([`ERRATA.md`](../../ERRATA.md), E-022).
+Execution overhead is reported as supporting evidence, not as the contribution
+itself.
 
 The methodology mirrors the harness exactly. The measured numbers of Chapter 6
 of the thesis are produced by the code described here; its analytic estimates
@@ -55,8 +59,12 @@ workload, and `aggregate.py` (`write_determinism`) builds a cross-machine matrix
 for each artifact it compares the recorded hashes across all platforms present
 and labels the row `YES` when every platform produced an identical digest,
 `partial` when the digests that exist agree but not all platforms are present,
-and `NO` otherwise. Identical hashes across heterogeneous hosts are direct
-evidence that the container makes tool output independent of the host machine.
+and `NO` otherwise. Identical hashes across heterogeneous hosts show that the
+toolchain pinned in the image gave the same output on each host. The cross-host
+control, run through the CLI backend without the extension, gives the same six
+hashes, so the identity belongs to the pinned image rather than to the
+extension; the measurement covers six artifacts of two blink designs on three
+hosts and two builds of the image.
 
 ### Execution-overhead characterisation
 
@@ -288,10 +296,10 @@ The three axes are read against three distinct expectations.
   completes successfully across the toolchain categories. A failure localises to a
   specific tool and platform rather than a global pass/fail.
 - **Determinism** holds where the `Identical?` column in `results/determinism.md`
-  reads `YES` for an artifact across all evaluated machines: byte-identical
-  netlists and bitstreams from heterogeneous hosts are the portability claim,
-  realised. Concrete hashes and the per-artifact verdict are in that file (see
-  `results/determinism.md`).
+  reads `YES` for an artifact across all evaluated machines: the netlists and
+  bitstreams of the two designs were byte-identical on the three hosts, an
+  identity the toolchain pinned in the image accounts for. Concrete hashes and
+  the per-artifact verdict are in that file.
 - **Overhead** is read from `results/summary.csv` and `results/summary.md`: the
   `overhead_x_vs_native` factor with its Welch p-value quantifies the steady-state
   cost of containerisation, and the gap between the `cli` and `strategy` backends
@@ -302,7 +310,11 @@ The three axes are read against three distinct expectations.
   document remains valid as the data is regenerated.
 
 The overhead figures are supporting evidence for the viability of the
-architecture, not its contribution. The contribution is that the same tool
-invocation, unchanged from the user's perspective, runs in an isolated and
-portable environment and yields a machine-independent result, which the
-transparency and determinism axes establish and the overhead axis bounds.
+architecture, not its contribution. The transparency and determinism axes
+measured less than the contribution the thesis names: the seven single-tool
+workloads exited with code 0 in the container on three hosts, and six artifacts
+of two designs were byte-identical across the hosts and across two builds of the
+image, which the pinned toolchain accounts for. No output of a container run was
+compared with a native one, and the report of the coverage run of
+`evaluation/integration/run_all.sh` is not in this repository
+([`ERRATA.md`](../../ERRATA.md), E-022 and E-031).

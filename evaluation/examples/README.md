@@ -1,17 +1,19 @@
 # FEntwumS ContainerExtension example suite
 
-Eight self-contained FPGA designs that exercise the open-source toolchain through the FEntwumS
+Eight self-contained FPGA designs, written to exercise the open-source toolchain through the FEntwumS
 ContainerExtension. Every tool runs inside the `fentwums/oss-cad-suite` container; no host toolchain is
 required. The designs span both source languages and the full synthesis, place-and-route, and bitstream
 pipeline so that, collectively, they drive the back-end tools the extension containerises.
 
-These projects are supplementary: the thesis does not cite them, and none of its figures comes from
-them. The measured workloads of Chapter 6 use the designs under [`../integration/`](../integration/).
+These projects are supplementary: the thesis does not cite them, none of its figures comes from them,
+and no run of them is recorded in this repository. The measured workloads of Chapter 6 use the designs
+under [`../integration/`](../integration/).
 
 ## Coverage matrix
 
 All eight target the Cologne Chip GateMate evaluation board and run the same back end
-(`synth_gatemate` → `nextpnr-himbaechel` → `gmpack`); each compiles end to end to a bitstream.
+(`synth_gatemate` → `nextpnr-himbaechel` → `gmpack`); each is set up to compile end to end to a
+bitstream.
 
 | Folder | Lang | Synthesis front end | Compile | Fit (P&R) | Assemble | Simulate |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -43,6 +45,7 @@ distinct. The designs are interface examples, not pin-locked reference designs.
 
 ## Purpose
 
-This suite is the integration-test corpus for the FEntwumS ContainerExtension. Each design is
-self-checking and self-terminating, so a passing simulation plus a produced bitstream confirm the
-container, the tool invocation, and the manifest wiring end to end.
+The projects were written as an integration corpus for the FEntwumS ContainerExtension. Each testbench
+checks its design and ends by itself, so a run in which every simulation passes and every compile
+produces a bitstream would exercise the container, the tool invocation and the project manifest end to
+end; no such run is recorded here.

@@ -5,10 +5,12 @@ Architecture for the Transparent Integration of Containerized Execution Environm
 Open-Source Binaries in OneWare Studio"*. The evaluation has three axes:
 
 1. **Functional transparency.** The unmodified FPGA toolchain (synthesis, place-and-route, bitstream,
-   simulation) executes correctly through the containerised backends.
+   simulation) runs through the containerised backends; in the measurement for the thesis, every
+   iteration of the seven workloads exited with code 0 on the three hosts.
 2. **Output determinism and portability.** The produced netlists and bitstreams are SHA-256 hashed on
-   every machine; identical hashes across platforms are direct evidence that the architecture makes
-   tool outputs machine-independent.
+   every machine. Identical hashes across platforms show that the toolchain pinned in the image gives
+   the same outputs on each host; the measurement found the six artifacts of two designs identical on
+   three hosts and two builds of the image. No container output was compared with a native one.
 3. **Execution-overhead characterisation.** Native against container, and raw `docker run` against the
    real `DockerExecutionStrategy` code path, reported with 95% confidence intervals.
 
