@@ -3,7 +3,7 @@
 This protocol specifies how to collect the **valid** native-versus-container execution-overhead
 baseline for the overhead study. It complements [the evaluation methodology](evaluation.md): that
 document defines the workload matrix, the three backends, and the statistics; this one fixes the single
-condition under which a *native* baseline is sound: the native toolchain and the containerized
+condition under which a *native* baseline is sound: the native toolchain and the containerised
 toolchain must be the **same build on the same architecture, with no emulation in between**.
 
 ## Why a dedicated protocol

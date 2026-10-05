@@ -3,7 +3,7 @@
 Eight self-contained FPGA designs that exercise the open-source toolchain through the FEntwumS
 ContainerExtension. Every tool runs inside the `fentwums/oss-cad-suite` container; no host toolchain is
 required. The designs span both source languages and the full synthesis, place-and-route, and bitstream
-pipeline so that, collectively, they drive the back-end tools the extension containerizes.
+pipeline so that, collectively, they drive the back-end tools the extension containerises.
 
 These projects are supplementary: the thesis does not cite them, and none of its figures comes from
 them. The measured workloads of Chapter 6 use the designs under [`../integration/`](../integration/).
@@ -24,9 +24,9 @@ All eight target the Cologne Chip GateMate evaluation board and run the same bac
 | `07_uart_tx` | Verilog | Yosys | `synth_gatemate` | `nextpnr-himbaechel` | `gmpack` | `iverilog` |
 | `08_sync_fifo` | VHDL | `ghdl` plugin | `synth_gatemate` | `nextpnr-himbaechel` | `gmpack` | `ghdl` |
 
-VHDL designs are read directly inside the containerized Yosys via the `ghdl` plugin
+VHDL designs are read directly inside the containerised Yosys via the `ghdl` plugin
 (`plugin -i ghdl; ghdl --std=08 <source> -e <top>; synth_gatemate -top <top> ...`), keeping the entire
-flow in the container. Verilog designs are synthesized by Yosys directly. Place-and-route runs with
+flow in the container. Verilog designs are synthesised by Yosys directly. Place-and-route runs with
 `--vopt allow-unconstrained`, so the pin assignments need not form a complete or physically meaningful
 layout; `nextpnr` places any unconstrained signal itself.
 

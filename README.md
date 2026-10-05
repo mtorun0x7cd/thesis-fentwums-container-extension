@@ -173,8 +173,8 @@ _As published in the catalogue record (https://doi.org/10.57683/EPUB-3597), supp
 OneWare Studio is an IDE for FPGA development built on .NET 10 and Avalonia (Section 3.1). It runs open-source toolchains such as Yosys, nextpnr and Icarus Verilog natively on the host, so a build that succeeds on one machine can fail on another, which the thesis calls "Environment Drift" (Section 1.1). Containers pin a toolchain, but driving them from a command line breaks the work in the IDE (Section 1.2). The thesis designs and implements an extension for OneWare Studio that runs selected tools in containers, transparently for the user, and measures what that costs. Its three research questions (Section 1.3):
 
 - **RQ1, architectural foundation:** which architectural patterns make container orchestration work across Windows, Linux and macOS, including user-ID mapping and the transports to the daemon (Chapter 4, Section 5.3);
-- **RQ2, transparent integration:** how the containerized tools can be integrated into a .NET IDE with streamed output and structured diagnostics (Sections 4.3, 5.4 and 5.9); assessed qualitatively;
-- **RQ3, performance viability:** what the containerized path costs against native execution, also across architectures (Chapter 6).
+- **RQ2, transparent integration:** how the containerised tools can be integrated into a .NET IDE with streamed output and structured diagnostics (Sections 4.3, 5.4 and 5.9); assessed qualitatively;
+- **RQ3, performance viability:** what the containerised path costs against native execution, also across architectures (Chapter 6).
 
 ### Contributions
 
@@ -245,12 +245,12 @@ The thesis states these as design properties of the architecture; a threat-model
 
 - **Non-root execution.** On rootful runtimes the container runs as the host user (`--user` with the host UID:GID), so build artifacts belong to the developer; on rootless runtimes the runtime's own user-namespace remap applies and `--user` is omitted.
 - **Reduced kernel surface.** All Linux capabilities are dropped, `no-new-privileges` is set and the process count is capped; the runtime's default seccomp profile applies.
-- **Workspace path containment.** Bind-mount paths are canonicalized segment by segment, with cycle detection and a bounded depth; a path outside the workspace root is not mounted. A time-of-check to time-of-use window remains (Section 4.4).
+- **Workspace path containment.** Bind-mount paths are canonicalised segment by segment, with cycle detection and a bounded depth; a path outside the workspace root is not mounted. A time-of-check to time-of-use window remains (Section 4.4).
 - **Shell-less execution.** Commands run as an argument vector with `tini` as PID 1, so shell metacharacters are inert; a secondary check rejects arguments that embed command separators (Sections 4.4 and 5.7; E-030).
 - **Windows transport.** The named-pipe client requests the impersonation level Identification, so a daemon endpoint can identify the client but cannot act on its behalf (Section 5.3).
 - **Resource bounds.** CPU, memory and process-count limits apply through the runtime's cgroup controls.
 
-The extension is built with `IsAotCompatible` set and uses explicit reflection at one documented place: it replaces the stream opener of the Windows named-pipe transport through a private field of the Docker.DotNet library, because the public API cannot express the lower impersonation level (Section 5.3.1; `DockerExecutionStrategy.cs`, lines 1162 to 1186 at `5fa2f5f`). That count covers explicit reflection calls only: Docker.DotNet serializes through Newtonsoft.Json, which one view model of the extension uses as well, and the extension preserves both assemblies from trimming. No Native-AOT build was tested in the thesis ([`ERRATA.md`](ERRATA.md), E-015).
+The extension is built with `IsAotCompatible` set and uses explicit reflection at one documented place: it replaces the stream opener of the Windows named-pipe transport through a private field of the Docker.DotNet library, because the public API cannot express the lower impersonation level (Section 5.3.1; `DockerExecutionStrategy.cs`, lines 1162 to 1186 at `5fa2f5f`). That count covers explicit reflection calls only: Docker.DotNet serialises through Newtonsoft.Json, which one view model of the extension uses as well, and the extension preserves both assemblies from trimming. No Native-AOT build was tested in the thesis ([`ERRATA.md`](ERRATA.md), E-015).
 
 ## Contents
 
