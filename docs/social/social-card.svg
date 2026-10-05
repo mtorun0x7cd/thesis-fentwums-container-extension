@@ -12,9 +12,10 @@
   <rect width="1280" height="640" fill="#FFFFFF"/>
   <rect x="0" y="0" width="24" height="640" fill="#2563EB"/>
   <g font-family="Inter, Helvetica, Arial, sans-serif">
-    <text x="112" y="330" font-size="48" font-weight="700" fill="#0F172A">Containerized Execution Environments</text>
-    <text x="112" y="390" font-size="48" font-weight="700" fill="#0F172A">in OneWare Studio</text>
-    <text x="112" y="474" font-size="40" font-weight="400" fill="#475569">Master's thesis, TH Köln, 2026</text>
-    <text x="112" y="546" font-size="40" font-weight="500" fill="#1D4ED8">DOI 10.57683/EPUB-3597</text>
+    <text x="112" y="172" font-size="76" font-weight="700" fill="#0F172A">Containerized</text>
+    <text x="112" y="264" font-size="76" font-weight="700" fill="#0F172A">Execution Environments</text>
+    <text x="112" y="356" font-size="76" font-weight="700" fill="#0F172A">in OneWare Studio</text>
+    <text x="112" y="452" font-size="40" font-weight="400" fill="#475569">Master's thesis, TH Köln, 2026</text>
+    <text x="112" y="524" font-size="40" font-weight="500" fill="#1D4ED8">DOI 10.57683/EPUB-3597</text>
   </g>
 </svg>
