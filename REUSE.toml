@@ -20,7 +20,8 @@ SPDX-FileCopyrightText = "TH Köln (Technische Hochschule Köln)"
 SPDX-License-Identifier = "LicenseRef-third-party"
 
 # Metadata and documentation without room for a licence comment. CITATION.cff
-# and codemeta.json quote the abstract of the thesis.
+# quotes the abstract of the thesis, as the README does, and CITATION.cff and
+# codemeta.json quote its title and its printed keywords.
 [[annotations]]
 path = ["NOTICE", "CITATION.cff", "codemeta.json", "ERRATA.md"]
 precedence = "closest"
