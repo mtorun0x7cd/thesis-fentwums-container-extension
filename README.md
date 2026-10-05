@@ -316,11 +316,11 @@ The build date is fixed to the creation date of the deposited file (`SOURCE_DATE
 
 ### The evaluation
 
-The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the three machines ran 10.0.301) and Python 3 on three hosts; [`evaluation/README.md`](evaluation/README.md#rerunning-the-evaluation) gives the commands. In short:
+The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the three machines ran 10.0.301) and Python 3.9 to 3.12 (the three machines ran 3.9.6, 3.11.6 and 3.12.10) on three hosts; [`evaluation/README.md`](evaluation/README.md#rerunning-the-evaluation) gives the commands. In short:
 
 1. Build the toolchain image `fentwums/oss-cad-suite:2026-06-30` with `FEntwumS.ContainerExtension/docker/build_oss_cad_suite.sh`; the Dockerfile pins the Ubuntu base image by digest and the oss-cad-suite archive of 2026-06-30 by SHA-256.
 2. Publish the harness from `evaluation/`, where `global.json` selects the SDK: `(cd evaluation && dotnet publish harness/ContainerBenchmarkHarness.csproj -c Release -o benchmarking_suite/harness_bin)`.
-3. Run `python3 evaluation/benchmarking_suite/run_evaluation.py --image fentwums/oss-cad-suite:2026-06-30` on each host, with `--with-native` on a Linux amd64 host whose native toolchain passes the parity check.
+3. Run `python3 evaluation/benchmarking_suite/run_evaluation.py --image fentwums/oss-cad-suite:2026-06-30` on each host, with `--with-native` on a Linux amd64 host whose native toolchain passes the parity check. Under Python 3.14 the script stops before the first workload, because it gives an option a help text with a bare `%`, which the argparse of 3.14 rejects; [`evaluation/README.md`](evaluation/README.md#rerunning-the-evaluation) gives the details.
 4. Collect the per-host results and run `python3 evaluation/benchmarking_suite/aggregate.py`.
 
 > [!NOTE]

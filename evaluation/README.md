@@ -124,7 +124,7 @@ The result files record which `benchmark.py` ran, by its SHA-256, and the result
 
 ## Rerunning the evaluation
 
-The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the three machines ran 10.0.301) and Python 3 on each host, and the submodule `FEntwumS.ContainerExtension`. From the root of a clone:
+The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the three machines ran 10.0.301) and Python 3.9 to 3.12 (the three machines ran 3.9.6, 3.11.6 and 3.12.10, as their result files record) on each host, and the submodule `FEntwumS.ContainerExtension`. From the root of a clone:
 
 1. Build the toolchain image. Its inputs are pinned in `FEntwumS.ContainerExtension/docker/oss-cad-suite/Dockerfile`: the Ubuntu base image by digest (`sha256:53958ec7…`) and the oss-cad-suite release 2026-06-30 (`oss-cad-suite-linux-x64-20260630.tgz`) by SHA-256 (`28f10189…`). The build downloads that archive from the release of YosysHQ/oss-cad-suite-build; it is 719,033,749 bytes, the size the GitHub release API reported for it on 2026-09-24.
 
@@ -144,6 +144,8 @@ The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the t
    ```sh
    python3 evaluation/benchmarking_suite/run_evaluation.py --image fentwums/oss-cad-suite:2026-06-30
    ```
+
+   `run_evaluation.py` does not start under Python 3.14. Its line 107 gives the option `--target-cv` the help text "CV-adaptive target (%); 0 disables.", whose bare `%` is not a valid format. The argparse of Python 3.14 checks every help string when an argument is added and stops with `ValueError: badly formed help string` before any workload runs; Python 3.9.6, 3.10.20, 3.11.16 and 3.12.13 accept the line and fail on it only when `--help` prints the help. Measured on 2026-10-05 on macOS with Python 3.14.7; Python 3.13 was not tested. The script is not changed.
 
    On a Linux amd64 host with the same oss-cad-suite release installed natively, add `--with-native` for the native baseline; [`docs/amd64-native-baseline-protocol.md`](docs/amd64-native-baseline-protocol.md) gives the parity check that must pass first.
 

@@ -28,7 +28,10 @@ for the provenance of the committed results and the classification of each numbe
 
 ## Requirements
 
-- Python 3.8+ (standard library only for the tables; `pip install matplotlib` is needed for figures).
+- Python 3.9 to 3.12 (standard library only for the tables; `pip install matplotlib` is needed for figures).
+  The three machines ran 3.9.6, 3.11.6 and 3.12.10. Under Python 3.14, `run_evaluation.py` stops before
+  the first workload, because the argparse of 3.14 rejects the bare `%` in the help text of
+  `--target-cv`; see [`../README.md`](../README.md#rerunning-the-evaluation).
 - A running container engine (Docker, Podman, OrbStack, ...).
 - For the strategy backend, the .NET SDK 10.0.300 or any later 10.0 SDK, as `../global.json` allows (the
   three machines ran 10.0.301), and the submodule `FEntwumS.ContainerExtension`.
