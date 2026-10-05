@@ -34,7 +34,7 @@ To report an error, open an issue with the form Correction or write to info@mtor
 
 - **Location:** p. 12 (PDF p. 27), Section 2.3.1; p. 67 (PDF p. 82), Section 6.5.5
 - **Quoted text:** p. 12: "Running x86_64 binaries on ARM64 hosts requires dynamic or ahead-of-time binary translation [10]."; p. 67: "the Rosetta 2 Dynamic Binary Translation (DBT) framework operates at Exception Level 0 (EL0) [10], [14]."
-- **Correction:** Reference [10] (BinRec, EuroSys 2020) presents dynamic binary lifting and recompilation for program transformations such as reoptimization, deobfuscation and hardening. Its title and abstract do not concern running x86_64 code on ARM64, so its abstract does not support the statement on p. 12. [10] was published in April 2020, before Rosetta 2 was announced in June 2020, so it cannot be the source for the statement on Rosetta 2 on p. 67. On p. 67 only [14] remains cited; the statement on p. 12 has no other source in the work.
+- **Correction:** Reference [10] (BinRec, EuroSys 2020) presents dynamic binary lifting and recompilation for program transformations such as reoptimisation, deobfuscation and hardening. Its title and abstract do not concern running x86_64 code on ARM64, so its abstract does not support the statement on p. 12. [10] was published in April 2020, before Rosetta 2 was announced in June 2020, so it cannot be the source for the statement on Rosetta 2 on p. 67. On p. 67 only [14] remains cited; the statement on p. 12 has no other source in the work.
 - **Class:** attribution
 - **Evidence:** Registered metadata of [10] (doi:10.1145/3342195.3387550, issued 2020-04-15) and its abstract; the full text was not read. Apple press release of 2020-06-22 announcing the transition of the Mac to Apple silicon, which introduced Rosetta 2.
 - **Found:** 2026-09-24
@@ -91,7 +91,7 @@ To report an error, open an issue with the form Correction or write to info@mtor
 - **Quoted text:** "It assumes the existence of the underlying toolchain (Yosys, Vivado) on the host path. It does not solve the “Missing Binary” problem"
 - **Correction:** This holds for FuseSoC's default configuration only. Edalize, the back end through which FuseSoC drives EDA tools, has contained since December 2021 a launcher script (el_docker, selected through the EDALIZE_LAUNCHER environment variable) that runs open-source tools such as Yosys, nextpnr, Icarus Verilog and GHDL from container images. For those tools, and with Docker installed, FuseSoC can address the missing-binary problem.
 - **Class:** factual, not affecting results
-- **Evidence:** Edalize source repository (github.com/olofk/edalize), file scripts/el_docker, added on 2021-12-13 as a launcher script for dockerized EDA tools; FuseSoC documentation (version 2.4.7), chapter Interfacing EDA tool flows, on the use of Edalize.
+- **Evidence:** Edalize source repository (github.com/olofk/edalize), file scripts/el_docker, added on 2021-12-13 as a launcher script for dockerised EDA tools; FuseSoC documentation (version 2.4.7), chapter Interfacing EDA tool flows, on the use of Edalize.
 - **Found:** 2026-09-27
 - **Reported:** not reported
 - **Status:** confirmed
@@ -144,7 +144,7 @@ To report an error, open an issue with the form Correction or write to info@mtor
 
 - **Location:** p. 42 (PDF p. 57), Section 5.4.2, Listing 5.3
 - **Quoted text:** "so that the matcher is generated at compile time rather than built at runtime"; Listing 5.3: "RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking,"; "By using the [GeneratedRegex] attribute, the C# compiler emits specialized matcher code in Intermediate Language (IL) during the build. This eliminates the runtime compilation overhead and Large Object Heap (LOH) allocations associated with new Regex()"
-- **Correction:** For a pattern declared with RegexOptions.NonBacktracking, as in Listing 5.3, the .NET regular expression source generator emits no specialized matcher; it falls back to caching an ordinary Regex instance, which is constructed at run time. For this validator the matcher is therefore built at run time, and its construction cost is not eliminated. The bound on worst-case matching time that NonBacktracking provides still applies. The same holds for any other source-generated pattern that uses NonBacktracking.
+- **Correction:** For a pattern declared with RegexOptions.NonBacktracking, as in Listing 5.3, the .NET regular expression source generator emits no specialised matcher; it falls back to caching an ordinary Regex instance, which is constructed at run time. For this validator the matcher is therefore built at run time, and its construction cost is not eliminated. The bound on worst-case matching time that NonBacktracking provides still applies. The same holds for any other source-generated pattern that uses NonBacktracking.
 - **Class:** factual, not affecting results
 - **Evidence:** Microsoft Learn, ".NET regular expression source generators" (page dated 2025-10-20), passage on RegexOptions.NonBacktracking.
 - **Found:** 2026-09-24
@@ -309,7 +309,7 @@ To report an error, open an issue with the form Correction or write to info@mtor
 
 - **Location:** p. 71 (PDF p. 86), Section 6.5.5, System Call Interception
 - **Quoted text:** "be intercepted by the hypervisor thread in user space (virtualization trap), translated to host ARM64 system calls, executed on the host macOS XNU kernel, and returned via the same path. This multi-level context-switching adds approximately 500 to 1000 CPU clock cycles per system call."
-- **Correction:** Inside the Linux VM, system calls of the containerized process are handled by the guest Linux kernel at EL1, as the work itself describes the configuration (p. 13: containers on macOS run on a virtualized Linux kernel; Figure 6.1, p. 70: Linux kernel at guest EL1). They are not translated into host system calls or executed by the macOS kernel. Exits to the hypervisor occur for events such as timer access, interrupt handling and stage-2 translation faults, as the work states on p. 5, not for each system call. The figure of 500 to 1000 cycles per system call has no source.
+- **Correction:** Inside the Linux VM, system calls of the containerised process are handled by the guest Linux kernel at EL1, as the work itself describes the configuration (p. 13: containers on macOS run on a virtualised Linux kernel; Figure 6.1, p. 70: Linux kernel at guest EL1). They are not translated into host system calls or executed by the macOS kernel. Exits to the hypervisor occur for events such as timer access, interrupt handling and stage-2 translation faults, as the work states on p. 5, not for each system call. The figure of 500 to 1000 cycles per system call has no source.
 - **Class:** factual, not affecting results
 - **Evidence:** The work itself: p. 5, p. 13 and Figure 6.1 (p. 70).
 - **Found:** 2026-09-24
@@ -467,6 +467,17 @@ To report an error, open an issue with the form Correction or write to info@mtor
 - **Class:** factual, not affecting results
 - **Evidence:** Docker documentation: Docker Engine security, section Docker daemon attack surface (only trusted users should control the daemon); Linux post-installation steps (the docker group grants root-level privileges).
 - **Found:** 2026-09-24
+- **Reported:** not reported
+- **Status:** confirmed
+
+### E-043
+
+- **Location:** p. 56 (PDF p. 71), Section 6.3.3, item 3; p. 60 (PDF p. 75), Section 6.4.3, note to Table 6.3
+- **Quoted text:** p. 56: "the identical code path shipped in the extension. Telemetry and SDK logging are disabled in the harness so their writes do not run on the measured thread and confound the timing."; p. 60: "The strategy backend was driven over the Docker Desktop named pipe—the default Windows endpoint and the transport the corrected output-capture path targets (Section 6.5.7)—so these figures exercise the shipped code over its real Windows transport."
+- **Correction:** The harness runs the code of the extension, but not in its default configuration. Its settings service holds the defaults that the extension registers except four: the log level Off instead of Errors Only and the telemetry retention None instead of 25, as p. 56 says; the default image hdlc/ghdl:yosys instead of fentwums/oss-cad-suite:latest, which the benchmark script overrides with the image of each run; and the setting Bypass Named Pipe Security Check false, where the extension's default is true (Table B.1, p. 87; Section B.3.2, p. 88). With the bypass off, the strategy checks the server of the named pipe on Windows before it uses it, once when it connects and once at the start of each execution, and the benchmark starts a new harness process for every iteration. The strategy figures of Machine 3, among them the marginal cost of about 0.23 s on p. 60, therefore include two such checks per iteration, which the default configuration skips; their share was not measured. On Machines 1 and 2 the check does not run. The comparison on p. 60 with the lifecycle_floor delta of 0.255 s is not affected, because the no-op workload passes through the same check.
+- **Class:** factual, not affecting results
+- **Evidence:** evaluation/harness/Program.cs, lines 361 to 384 (the defaults of MockSettingsService: LogLevelSetting "Off", TelemetryRetentionSetting "None", DefaultImageSetting FallbackImage, BypassNamedPipeCheckSetting false), byte-identical with src/ContainerBenchmarkHarness/Program.cs at commit 1884317 of github.com/FEntwumS/FEntwumS.ContainerExtension, the commit the macOS results record. src/ContainerExtension/ContainerExtensionModule.cs at 1884317 and at the pinned commit 5fa2f5f, which are identical: lines 203, 221, 226 and 232 register the defaults fentwums/oss-cad-suite:latest, Errors Only, 25 and true. src/ContainerExtension/DockerExecutionStrategy.cs at 1884317: VerifyWindowsNamedPipeAsync (lines 122 to 131) returns at once on other systems or with the bypass on, and runs at line 489, when the strategy connects, and at line 2523, in ExecuteAsync (lines 489 and 2554 at 5fa2f5f). evaluation/benchmarking_suite/benchmark.py: line 844 sets ONEWARE_DOCKER_IMAGE to the image of --image, and run_command (lines 410 to 416) starts the harness as a new process for every warm-up and measured iteration. The work itself: Table B.1 (p. 87) and Section B.3.2 (p. 88) give the bypass as on by default.
+- **Found:** 2026-10-05
 - **Reported:** not reported
 - **Status:** confirmed
 
