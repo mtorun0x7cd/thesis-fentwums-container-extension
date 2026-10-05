@@ -5,5 +5,6 @@ __pycache__/
 # Published .NET strategy backend (build artifact)
 harness_bin/
 
-# Leftover toolchain artifacts in local_tests are produced by benchmark runs;
-# results/ IS committed (the thesis cites it).
+# results/ is not ignored: it holds the measured results that the thesis
+# reports. A run writes its toolchain artifacts into the workload folders under
+# ../integration/, whose own .gitignore covers them.

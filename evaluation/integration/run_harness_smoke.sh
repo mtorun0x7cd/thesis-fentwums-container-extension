@@ -39,8 +39,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVALUATION_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# This repository vendors the extension sources under FEntwumS.ContainerExtension/ and keeps
-# the evaluation code beside them under evaluation/. Both directories are named once here and
+# The extension is the submodule FEntwumS.ContainerExtension/, pinned at a commit, and the
+# evaluation code lies beside it under evaluation/. Both directories are named once here and
 # every project path is derived from them, so the layout stays visible in a single place.
 PROJECT_DIR="$REPO_ROOT/FEntwumS.ContainerExtension"
 SOLUTION="$PROJECT_DIR/OneWare.ContainerExtension.slnx"
