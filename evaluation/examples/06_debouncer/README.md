@@ -1,6 +1,6 @@
 # debouncer
 
-> Target: GateMate Eval Board - full flow: synth_gatemate -> nextpnr-himbaechel -> gmpack; simulate on GHDL.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on GHDL.
 
 Synchronous push-button debouncer with rising-edge detection. The raw button
 input is resynchronised to the clock domain, filtered against contact bounce,
@@ -34,7 +34,7 @@ The stability window in clock cycles is
 | `rst`          | in  | 1     | Synchronous active-high reset                                 |
 | `btn_in`       | in  | 1     | Raw, asynchronous button input                                |
 | `btn_state`    | out | 1     | Debounced button level                                        |
-| `rising_pulse` | out | 1     | One-cycle strobe on a clean 0->1 transition of `btn_state`    |
+| `rising_pulse` | out | 1     | One-cycle strobe on a clean 0→1 transition of `btn_state`     |
 
 ## Toolchain path
 

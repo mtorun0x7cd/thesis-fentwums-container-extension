@@ -1,11 +1,11 @@
 # sync_fifo
 
-> Target: GateMate Eval Board - full flow: synth_gatemate -> nextpnr-himbaechel -> gmpack; simulate on GHDL.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on GHDL.
 
 Synchronous (single-clock) first-in/first-out buffer. Tier 4 example combining
 a datapath (the circular memory and read/write pointers) with control logic
 (the occupancy counter and full/empty interlock). It exercises the
-**GHDL -> Yosys** VHDL-2008 path of the FEntwumS ContainerExtension.
+**GHDL → Yosys** VHDL-2008 path of the FEntwumS ContainerExtension.
 
 ## Architecture
 

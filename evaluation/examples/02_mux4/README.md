@@ -1,8 +1,8 @@
 # mux4
 
-> Target: GateMate Eval Board - full flow: synth_gatemate -> nextpnr-himbaechel -> gmpack; simulate on Icarus Verilog.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on Icarus Verilog.
 
-Parameterized 4-to-1 multiplexer (combinational). Selects one of four `WIDTH`-bit
+Parameterised 4-to-1 multiplexer (combinational). Selects one of four `WIDTH`-bit
 input words onto the output under control of a 2-bit selector. The selector case
 is exhaustive over its two bits, so the design is purely combinational and infers
 no storage.

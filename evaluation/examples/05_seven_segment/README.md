@@ -1,6 +1,6 @@
 # seven_seg_decoder
 
-> Target: GateMate Eval Board - full flow: synth_gatemate -> nextpnr-himbaechel -> gmpack; simulate on GHDL.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on GHDL.
 
 Combinational hexadecimal-to-seven-segment decoder for a common-anode display.
 A 4-bit input code `0x0..0xF` is mapped to the active-LOW segment drive for the

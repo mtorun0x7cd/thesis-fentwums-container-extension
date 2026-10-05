@@ -1,9 +1,9 @@
 # uart_tx
 
-> Target: GateMate Eval Board - full flow: synth_gatemate -> nextpnr-himbaechel -> gmpack; simulate on Icarus Verilog.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on Icarus Verilog.
 
-Parameterized 8N1 UART transmitter. A four-state FSM (IDLE, START, DATA, STOP)
-serializes a byte onto a single line: the line idles high, a frame begins with
+Parameterised 8N1 UART transmitter. A four-state FSM (IDLE, START, DATA, STOP)
+serialises a byte onto a single line: the line idles high, a frame begins with
 one start bit (0), followed by eight data bits transmitted LSB-first, and closes
 with one stop bit (1). The bit period is derived at elaboration from
 `CLKS_PER_BIT = CLK_FREQ / BAUD`, so the same RTL retargets to any clock and
@@ -32,7 +32,7 @@ baud-rate pair.
 Verilog RTL exercising the Yosys synthesis path of the FEntwumS
 ContainerExtension. Functional verification uses Icarus Verilog (`iverilog`
 `-g2012` / `vvp`); a Yosys `hierarchy`/`proc`/`opt`/`check` pass confirms the
-design elaborates and is synthesizable.
+design elaborates and is synthesisable.
 
 ## Running in OneWare
 

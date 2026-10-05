@@ -1,9 +1,9 @@
 # full_adder
 
-> Target: GateMate Eval Board - full flow: synth_gatemate -> nextpnr-himbaechel -> gmpack; simulate on GHDL.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on GHDL.
 
 Single-bit full adder, the canonical tier-1 combinational example. It serves as
-the minimal smoke test for the GHDL analyze/elaborate/run path of the FEntwumS
+the minimal smoke test for the GHDL analyse/elaborate/run path of the FEntwumS
 ContainerExtension, which drives the toolchain inside the oss-cad-suite Docker
 container.
 
@@ -23,7 +23,7 @@ VHDL-2008, simulated with GHDL. OneWare invokes the container with `--std=08`
 (set via `vhdlStandard` in the manifest). The testbench `tb_full_adder`
 exhaustively sweeps all eight input combinations and checks `sum` and `cout`
 against an integer reference (the ones-count of the inputs), exercising the
-GHDL `-a` / `-e` / `-r` stages. No synthesis backend is required.
+GHDL `-a` / `-e` / `-r` stages. The simulation needs no synthesis back end.
 
 ## Running in OneWare
 

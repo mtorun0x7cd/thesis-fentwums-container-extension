@@ -1,9 +1,9 @@
 # shift_register
 
-> Target: Cologne Chip GateMate evaluation board - full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` via Compile (end to end to a bitstream); simulate on Icarus Verilog.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on Icarus Verilog.
 
-Parameterized parallel-load / left-shifting serial shift register (tier 2:
-sequential, parameterized). Demonstrates the Verilog synthesis path of the
+Parameterised parallel-load / left-shifting serial shift register (tier 2:
+sequential, parameterised). Demonstrates the Verilog synthesis path of the
 FEntwumS ContainerExtension (Icarus for simulation, Yosys for the synthesis
 front end) inside the `oss-cad-suite` container.
 
@@ -11,9 +11,9 @@ front end) inside the `oss-cad-suite` container.
 
 Synchronous, active-high reset. On each rising clock edge the priority is:
 
-1. `rst` - clear `q` to zero;
-2. `load` - capture the parallel word `d`;
-3. `shift_en` - shift left, dropping the MSB and admitting `sin` at the LSB.
+1. `rst`: clear `q` to zero;
+2. `load`: capture the parallel word `d`;
+3. `shift_en`: shift left, dropping the MSB and admitting `sin` at the LSB.
 
 `load` takes precedence over `shift_en` so a concurrent assertion is
 deterministic. `sout` continuously exposes the MSB (`q[WIDTH-1]`), the bit
@@ -36,7 +36,7 @@ Parameter `WIDTH` (default 8) sets the register width.
 
 ## Toolchain path
 
-`toolchain: Yosys` - the Verilog front end. Simulation uses Icarus Verilog
+`toolchain: Yosys`, the Verilog front end. Simulation uses Icarus Verilog
 (`iverilog -g2012` / `vvp`); synthesis elaboration is checked with Yosys
 (`read_verilog -sv`, `hierarchy`, `proc`, `opt`, `check`).
 

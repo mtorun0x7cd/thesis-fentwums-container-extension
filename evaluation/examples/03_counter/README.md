@@ -1,6 +1,6 @@
 # counter
 
-> Target: Cologne Chip GateMate evaluation board - full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` via Compile (end to end to a bitstream); simulate on GHDL.
+> Target: Cologne Chip GateMate evaluation board. Compile runs the full flow `synth_gatemate` → `nextpnr-himbaechel` → `gmpack` to a bitstream; the simulation runs on GHDL.
 
 Parametric binary up-counter (Tier 2, sequential). The count is held in an
 `unsigned` register from `numeric_std`, so wrap-around at `2**WIDTH` follows
@@ -17,7 +17,7 @@ advances by one on each rising clock edge while `en` is asserted.
 | q    | out       | `WIDTH`                | Current count, unsigned binary                |
 
 Generic `WIDTH : natural := 8` sets the counter width. The testbench
-instantiates `WIDTH = 4` to exercise the full range and the 15 -> 0 wrap
+instantiates `WIDTH = 4` to exercise the full range and the 15 → 0 wrap
 within a bounded simulation.
 
 ## Toolchain path
