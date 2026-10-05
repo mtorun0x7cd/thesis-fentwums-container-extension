@@ -117,8 +117,11 @@ pinned submodules. Licence as in section 1.
     Adapted from the same template: the module is renamed; ecp5_blink.v
     drives the LED from bit 23 of the counter instead of bit 20;
     Formal_Verification/Blink.v adds a formal assertion. ice40_blink.v and
-    ecp5_blink.v are the input files of the measured workloads, and their
-    SHA-256 stands in every result file. LicenseRef-third-party.
+    ecp5_blink.v are the designs that the iCE40 and ECP5 synthesis workloads
+    read. Their SHA-256 stands in the result files of those two workloads on
+    each machine, synth_ice40_yosys.json and synth_ecp5_yosys.json; the
+    later workloads of each flow record the files derived from them.
+    LicenseRef-third-party.
 
   evaluation/integration/Verilog_Blink/Verilog_Blink_tb.v,
   evaluation/integration/Verilog_Blink/sim_main.cpp,
