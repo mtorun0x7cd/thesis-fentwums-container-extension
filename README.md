@@ -326,7 +326,7 @@ The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the t
 > [!NOTE]
 > The toolchain image is build-only and is not on a registry, so a rebuilt image has its own digest (Section 6.5.3). The check of a rerun is the six FPGA artifact hashes that [`evaluation/README.md`](evaluation/README.md#rerunning-the-evaluation) lists in full, not the image digest. A run took about 7 minutes on Machine 1, 16 minutes on Machine 2 with the native baseline and 10 minutes on Machine 3, without the image build.
 
-`make aggregate-check` recomputes, without Docker, the statistics of every result file from its raw times and the committed tables from the result files: all 96 statistics and comparison blocks are reproduced, `summary.md` and `determinism.md` come out byte-identical, and `summary.csv` identical up to its line endings.
+`make aggregate-check` recomputes, without Docker, the statistics of every result file from its raw times and the committed tables from the result files: all 96 statistics and comparison blocks are reproduced within a relative tolerance of 1e-9, `summary.md` and `determinism.md` come out byte-identical, and `summary.csv` identical up to its line endings.
 
 ### The checks CI runs
 
