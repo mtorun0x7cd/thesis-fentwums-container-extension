@@ -36,7 +36,7 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 - `publication/Torun_Containerized_Execution_OneWare.pdf`, the deposited thesis, byte-identical with the file behind <https://doi.org/10.57683/EPUB-3597>: 557,042 bytes, SHA-256 `f7cb839334f73d2df225a323d0d0473181055a6041cdbca8233f33a8f0c74f93`.
 - `thesis/`, the LaTeX sources, which reproduce the text of the deposited file, not its bytes. Sources reconciled in 2026 with the deposited text where the committed sources had diverged: section 7.3 third item, four hyphens. The sources carry the licence of the record, CC BY 4.0, and a build carries the title, author, subject, keywords and creation date of the deposited file.
 - `evaluation/`, the benchmark harness, the evaluation scripts, the measured results of the three test machines, the workload designs and the supplementary examples, as they were measured.
-- The submodules `FEntwumS.ContainerExtension`, `OneWare`, `OneWare.GhdlExtension` and `FEntwumS.NetlistViewer`, pinned at the commits the thesis describes.
+- The submodules `FEntwumS.ContainerExtension`, `OneWare`, `OneWare.GhdlExtension` and `FEntwumS.NetlistViewer`, pinned at their state when the thesis was submitted (2026-07-02).
 - `Makefile` and `scripts/compare_pdf_text.py`, which build the thesis and compare its text with the deposited file.
 - `CITATION.cff`, `codemeta.json`, `NOTICE`, `REUSE.toml` and the licence texts.
 
