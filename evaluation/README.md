@@ -37,6 +37,8 @@ Each quantitative statement of Chapter 6 is classified as one of: *measured here
 | Thesis | Statement | Evidence | Kind |
 | --- | --- | --- | --- |
 | 6.2.1 | Host, CPU, memory, operating system and container runtime of the three machines | The `system` block of every result file: operating system and release, CPU model as the system reports it, logical cores, memory in GB, Python and Docker versions | measured here, as far as the block reaches; the product name of the Windows CPU, the core split, the Windows build number and the nominal memory are not in it, and the file `machine.json` the thesis names is not in this repository |
+| 6.3.2 | The system load of Machine 1 verified as idle (< 1 %) before execution | none | measured, evidence not in this repository; the thesis records no thread placement, see E-017 |
+| 6.3.4 | Two warm-up runs; at least 30 measured iterations, continued until the CV is at most 15 % or 60 iterations are reached | The `experiment` block of every result file (`warmup` 2, `iterations` 30, `target_cv_percent` 15.0, `max_iterations` 60) and the number of times stored per backend | measured here |
 | 6.4.1, Table 6.1 | CLI and strategy means with 95 % confidence intervals and the extension overhead on Machine 1 | [`results/macos-arm64/`](benchmarking_suite/results/macos-arm64/), [`results/summary.csv`](benchmarking_suite/results/summary.csv) | measured here; the tables are derived by `aggregate.py` |
 | 6.4.2, Table 6.2 | Native, CLI and strategy means, the container floor and both overhead ratios on Machine 2 | [`results/linux-amd64/`](benchmarking_suite/results/linux-amd64/) | measured here |
 | 6.4.3, Table 6.3 | CLI and strategy means on Machine 3, including the bimodal `pnr_ice40_nextpnr` strategy run | [`results/windows-amd64/`](benchmarking_suite/results/windows-amd64/); the per-iteration times are in the file | measured here |
@@ -50,9 +52,12 @@ Each quantitative statement of Chapter 6 is classified as one of: *measured here
 | 6.5.3 | The image Machine 3 ran, exported with `docker save` and loaded unchanged on Machine 1, gives the same six FPGA artifacts there | [`results/supplementary/shared-image-control/`](benchmarking_suite/results/supplementary/shared-image-control/): the six result files of that run and the note written with them | measured here; see [the cross-host control](#the-cross-host-control) |
 | 6.5.3 | `Blink.vvp` differs between two runs on Machine 3 | none | measured, evidence not in this repository |
 | 6.4.4, Listing C.2 | Four processes, 16 threads each, 1,000 events per thread; each process completing 16,000 events in 2,602 ms | Listing C.2 of the thesis, which records the result of the parent process only | measured, raw log not in this repository; see E-020 |
+| 6.4.4 | An in-process throughput of roughly 6,150 events per second | 16,000 events in 2,602 ms, as Listing C.2 records them | derived; for the parent process only, see E-020 |
 | 6.4.5 | 15 µs serialisation, 45 µs and 90 µs mutex costs, 1.86 ms and 18.6 s | Equations (6.1) and (6.2) | analytic; the thesis states the constants as illustrative |
 | 6.5.4 | gRPC-FUSE "up to 10x", virtio-blk "3-5x" | none | stated without a source; see E-023 |
-| 6.5.5 | Instruction expansion of 1.6× to 2.2×; 500 to 1000 cycles per system call | none | stated without a source; see E-027 and E-028 |
+| 6.5.5 | Instruction expansion of 1.6× to 2.2×; 500 to 1000 cycles per system call; 16 KB pages on macOS against 4 KB pages for Linux binaries | none | stated without a source; see E-027 and E-028 for the first two |
+| 6.5.5 | CrossMapping improving translation performance by 8.5 % on ARMv8 and 7.3 % on RISC-V; Risotto improving emulation throughput by up to 19.7 %, 6.7 % on average | References [12] and [11] of the thesis | cited |
+| 6.5.6 | An unhandled `ArgumentException` of a standalone process surfacing as exit code 134 (`SIGABRT`, mapped to -6) | none; Listing C.1 shows the exception, not the exit code | stated without a source |
 | 6.5.7 | The named-pipe attach defect and the validated corrected path | The Machine 3 result files, all iterations with exit code 0 | measured here for the timed run |
 | Listing C.1 | The exception raised at `DockerExecutionStrategy.cs:line 2525` | none | recorded with an earlier state of the extension: the throw stands at line 2452 at the pinned commit, at line 2421 at `1884317`, and at line 2525 at `0810f49` of 2026-06-22 |
 
