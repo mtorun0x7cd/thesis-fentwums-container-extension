@@ -171,9 +171,11 @@ only; no third-party numerical dependency is introduced.
   container backends, any first-run setup, so the measured iterations reflect
   steady state.
 - **Confidence intervals.** Every reported mean carries a two-sided 95% Student-t
-  confidence interval (`calculate_stats`, `t_critical_95`). Critical values are
-  exact for `df ≤ 30`, table-interpolated conservatively above that, and fall
-  back to the asymptotic `z = 1.960` for large `df`.
+  confidence interval (`calculate_stats`, `t_critical_95`). Critical values come
+  from a table for every `df` up to 30 and for 40, 50, 60, 80, 100 and 120; a
+  `df` is rounded down to an integer, one between two table entries steps down
+  to the nearest lower entry (conservative: the interval is slightly wider), and
+  one above 120 takes the asymptotic `z = 1.960`.
 - **CV-adaptive repetition.** A minimum of `--iterations` measured runs is taken;
   if `--target-cv` is set, sampling continues until the coefficient of variation
   falls to or below the target or `--max-iterations` is reached
