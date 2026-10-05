@@ -172,6 +172,7 @@ The check runs in two steps. [`scripts/check_result_statistics.py`](../scripts/c
 - α is isolated on Machine 2 only; Machine 3 has no same-build native toolchain (6.5.2).
 - Each host ran one container runtime; a comparison of runtimes is future work (7.2).
 - The workloads are short single-tool dispatches; the relative overhead is large for sub-second work and shrinks as work grows (6.5.1).
+- On Machine 3 the strategy backend ran with the extension's check of the named-pipe server switched on. `harness/Program.cs` sets `BypassNamedPipeCheckSetting` to `false`, where the extension's default is `true`, so every harness process checks the server of the pipe twice before the tool runs ([`docs/evaluation.md`](docs/evaluation.md#native-container-cli-and-the-real-strategy-path)). The Windows result files record no harness commit; every committed state of the harness since upstream `477699c` of 2026-06-28, which switched off its telemetry and SDK logging as Section 6.3.3 describes, sets the same value. The strategy figures of Machine 3, its marginal cost of the extension among them, therefore include this check, and its share of them was not measured. On Machines 1 and 2 the check does not run.
 - The native versions of nextpnr, icepack and ecppack were not resolved by the harness; their parity rests on the shared oss-cad-suite release (Table 6.2, note).
 - `Blink.vvp` is excluded from the determinism claim (6.5.3).
 - The contention constants of 6.4.5 are illustrative, and several figures of 6.5.4 and 6.5.5 have no source; the table above names them.

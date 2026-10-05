@@ -125,13 +125,26 @@ strategy.
    the cost of containerisation itself, independent of the extension.
 3. **Strategy (`dotnet`).** The workload runs through `ContainerBenchmarkHarness`
    (`evaluation/harness/Program.cs`), which constructs a real
-   `DockerExecutionStrategy` over a `MockSettingsService` carrying the plugin's
-   default settings and invokes `ExecuteAsync`, the code path OneWare
-   Studio uses in production, including image resolution, container lifecycle and
-   stream demultiplexing. Telemetry and SDK logging are disabled in the harness so
-   their writes do not run on the measured thread and confound the figure. This is
-   the load-bearing backend: it measures the architecture as shipped, not a CLI
-   approximation of it.
+   `DockerExecutionStrategy` over a `MockSettingsService` and invokes
+   `ExecuteAsync`, the code path OneWare Studio uses, including image
+   resolution, container lifecycle and stream demultiplexing. Every setting the
+   strategy reads has the default that `ContainerExtensionModule.cs` registers,
+   the same at `1884317` and at the pin `5fa2f5f`, except four. The log level is
+   `Off` instead of `Errors Only` and the telemetry retention `None` instead of
+   `25`, so that the writes of SDK logging and telemetry do not run on the
+   measured thread and confound the figure. The default image is the fallback
+   image `hdlc/ghdl:yosys` instead of `fentwums/oss-cad-suite:latest`; no run
+   uses it, because `benchmark.py` sets `ONEWARE_DOCKER_IMAGE` to the image of
+   `--image`, which the strategy resolves first. And
+   `BypassNamedPipeCheckSetting` is `false`, where the setting "Bypass Named
+   Pipe Security Check" of the extension defaults to `true`: on Windows the
+   strategy then checks the server of the named pipe before it uses it
+   (`VerifyWindowsNamedPipeAsync`), with a connection of its own to the pipe and
+   a check of the process that serves it, once when it connects and once at the
+   start of `ExecuteAsync`, so twice in every harness process and thus in every
+   measured iteration; on other systems the method returns at once. This is the
+   load-bearing backend: it measures the code of the extension under these
+   settings, not a CLI approximation of it.
 
 `run_evaluation.py` defaults to `--backend all`, exercising both the CLI and the
 real strategy path. The overhead attributable to the extension over and above raw
