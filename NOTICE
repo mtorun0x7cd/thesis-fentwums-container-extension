@@ -89,14 +89,22 @@ above, and its figures are the author's own drawings in TikZ.
 
 Recorded on 2026-10-02 from the files, from the history of the extension
 repository in which they were first committed, and by comparison with the
-pinned submodules. Licence as in section 1.
+pinned submodules; for the example projects corrected on 2026-10-05 from the
+history of the earlier repository of this thesis. Licence as in section 1.
 
   evaluation/examples/01_full_adder to 08_sync_fifo
-    Eight designs with their testbenches, pin constraints and OneWare project
-    files. Committed by the author to the extension on 2026-06-28
+    Eight designs with their testbenches, OneWare project files and device
+    settings, the pin constraints (project.pcf) of 01_full_adder, 02_mux4
+    and 08_sync_fifo, a README for each project and the README of the
+    folder: committed by the author to the extension on 2026-06-28
     (FEntwumS.ContainerExtension, commit 3fc16ce) and moved here on
-    2026-06-30. No other origin was found: the files carry no notice of one,
-    and none of them occurs in the pinned submodules. The author's work; MIT.
+    2026-06-30. The pin constraints of 03_counter to 07_uart_tx were written
+    by the author in the earlier repository of this thesis, where they were
+    first committed on 2026-07-12. The README files were revised by the
+    author in the extension on 2026-06-28 and 2026-06-30, in the earlier
+    repository by 2026-07-12 and on 2026-07-15, and in this repository.
+    No other origin was found: the files carry no notice of one, and none of
+    them occurs in the pinned submodules. The author's work; MIT.
 
   evaluation/integration/VHDL_Blink/VHDL_Blink.vhd,
   evaluation/integration/VHDL_Blink/VHDL_Blink_tb.vhd
