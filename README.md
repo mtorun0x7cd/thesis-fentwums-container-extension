@@ -257,7 +257,7 @@ The extension is built with `IsAotCompatible` set and uses explicit reflection a
 | Path | Content | In the thesis | Licence |
 | --- | --- | --- | --- |
 | [`publication/`](publication/) | The deposited thesis, its checksum and how to verify it | the whole thesis | CC BY 4.0; the mark of TH Köln excepted |
-| [`thesis/`](thesis/) | The LaTeX sources; `thesis/figures/th_logo.pdf` is the mark of TH Köln | the whole thesis | CC BY 4.0; the mark excepted |
+| [`thesis/`](thesis/) | The LaTeX sources; `thesis/figures/th_logo.pdf` is the mark of TH Köln | the whole thesis | CC BY 4.0; the mark excepted; the build file `latexmk.conf` MIT |
 | [`evaluation/`](evaluation/) | Benchmark harness, evaluation scripts, raw results and tables of the three machines, the original files of the cross-host control of Section 6.5.3, workload designs, supplementary examples; its [`README.md`](evaluation/README.md) maps each number of Chapter 6 to its evidence | Chapter 6 | MIT for code, CC BY 4.0 for data and documentation; six fixtures excepted |
 | `FEntwumS.ContainerExtension/` | The extension under study, as a pinned submodule | Chapters 4 and 5, Appendices A and B | its own: MIT |
 | `OneWare/`, `OneWare.GhdlExtension/`, `FEntwumS.NetlistViewer/` | OneWare Studio and two of its extensions, as pinned submodules for reference | Section 3.1 (OneWare Studio); the two extensions are not named in the thesis | their own |
@@ -398,9 +398,9 @@ GitHub's "Cite this repository" reads [`CITATION.cff`](CITATION.cff) and renders
 
 | Path | Licence |
 | --- | --- |
-| `thesis/`, `publication/` | CC BY 4.0, the licence of the thesis; the mark of TH Köln (`thesis/figures/th_logo.pdf`, and on the title page) is excepted, see [`NOTICE`](NOTICE) |
+| `thesis/`, `publication/` | CC BY 4.0, the licence of the thesis, except the build file `thesis/latexmk.conf` (MIT); the mark of TH Köln (`thesis/figures/th_logo.pdf`, and on the title page) is excepted, see [`NOTICE`](NOTICE) |
 | `evaluation/benchmarking_suite/results/` | CC BY 4.0: measured data |
-| `evaluation/harness/`, the scripts and fixtures in `evaluation/`, `evaluation/examples/`, `scripts/`, `Makefile`, `.github/`, `.githooks/`, the build and configuration files, `docs/social/render.sh` | MIT |
+| `evaluation/harness/`, the scripts and fixtures in `evaluation/`, `evaluation/examples/`, `scripts/`, `Makefile`, `thesis/latexmk.conf`, `.github/`, `.githooks/`, the build and configuration files, `docs/social/render.sh` | MIT |
 | Six integration fixtures taken from the project templates of OneWare Studio | not licensed by this repository; [`NOTICE`](NOTICE), section 3, names them and their source |
 | This README and the other documentation, `CITATION.cff`, `codemeta.json`, `docs/social/social-card.*` | CC BY 4.0 |
 | The four submodules | their own licences, see [Pinned software](#pinned-software) |
