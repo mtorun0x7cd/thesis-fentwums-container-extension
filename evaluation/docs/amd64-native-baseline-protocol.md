@@ -12,8 +12,10 @@ The reference image `fentwums/oss-cad-suite` is built for `linux/amd64` only and
 registry (GHDL is not compiled in the upstream arm64 releases; see [Limitations](https://github.com/FEntwumS/FEntwumS.ContainerExtension/blob/5fa2f5fee83331df203f91e5eea6024a7d533b67/docs/articles/limitations.md) at the pinned commit). On an Apple-Silicon (arm64) host the
 container therefore runs under the daemon's binary-emulation layer (Rosetta/qemu), while any native
 toolchain is arm64. A macOS/arm64 "native vs container" comparison thus measures *containerisation +
-ISA emulation*, and the emulation term dominates; it does not isolate the cost of the integration
-layer. The macOS/arm64 figures are reported only as an emulated upper bound.
+ISA emulation* together and does not isolate the cost of the integration layer; any factor it gave
+would only be an upper bound for the emulated case. No native baseline was therefore taken on the
+macOS host of the thesis, and its figures are the marginal cost of the extension: the strategy backend
+against the CLI backend, both under the same emulation (thesis, Sections 6.1 and 6.4.1).
 
 A sound native baseline requires eliminating both confounds at once:
 
@@ -54,8 +56,15 @@ ghdl --version | head -1
 
 If any native version differs from the container's, stop: the overhead number would conflate a
 toolchain-version delta with the containerisation cost. Re-install the exact dated release before
-proceeding. The image digest and the host CPU/RAM/OS are captured per run by `benchmark.py`, so the
-parity conditions are recorded alongside every measurement.
+proceeding. The image digest and the host CPU, memory and operating system are captured per run by
+`benchmark.py`, and so is the version string the native tool reports (`experiment.native_tool_version`).
+In the Linux result files, the only ones with a native baseline, that string names the native Yosys and
+Icarus Verilog; for nextpnr, icepack and ecppack it reads "Unknown or executable missing", and the GHDL
+check of step 3 is recorded nowhere, because no measured workload runs GHDL.
+
+On Machine 3 of the thesis the check failed: the native Windows release is a MinGW build, while the
+image carries a Clang build of the same source, so no native baseline was taken there. The only native
+baseline of the thesis is that of the Linux host, Machine 2 (thesis, Sections 6.3.3 and 6.5.2).
 
 ## Running the baseline
 
@@ -86,5 +95,6 @@ Only on these hosts is `overhead_x_vs_native` (with its Welch p-value and Holm-B
 `results/summary.csv`) attributable to containerisation rather than emulation. The `cli`-vs-`strategy`
 delta (`cli_vs_dotnet`), the cost the extension adds over raw `docker run`, needs no native baseline
 and is valid on every host, macOS included. The macOS/arm64 run remains useful for functional
-transparency and output-determinism (identical artifact hashes across architectures), and for the
-emulated upper bound, but its overhead figures must not be compared against the amd64 native numbers.
+transparency, for output determinism (identical artifact hashes across architectures) and for the
+marginal cost of the extension, but its overhead figures must not be compared against the amd64
+native numbers.

@@ -90,4 +90,6 @@ python3 benchmark.py --compare results/linux-amd64/synth_ice40_yosys.json result
   toolchain; it is not a shell and does not execute `sh -c` pipelines. The workload matrix therefore
   uses single-tool phases in dependency order.
 - On Apple Silicon the toolchain image runs as `linux/amd64` under emulation (upstream omits GHDL from
-  the arm64 releases); overhead measured there reflects emulation and is reported as such.
+  the arm64 releases), so a native baseline there would mix containerisation with emulation and is not
+  taken. The overhead reported for that host is the strategy backend against the CLI backend, both
+  under the same emulation (thesis, Sections 6.1 and 6.4.1).
