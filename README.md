@@ -260,7 +260,7 @@ The extension is built with `IsAotCompatible` set and uses explicit reflection a
 | [`thesis/`](thesis/) | The LaTeX sources; `thesis/figures/th_logo.pdf` is the mark of TH Köln | the whole thesis | CC BY 4.0; the mark excepted |
 | [`evaluation/`](evaluation/) | Benchmark harness, evaluation scripts, raw results and tables of the three machines, the original files of the cross-host control of Section 6.5.3, workload designs, supplementary examples; its [`README.md`](evaluation/README.md) maps each number of Chapter 6 to its evidence | Chapter 6 | MIT for code, CC BY 4.0 for data and documentation; six fixtures excepted |
 | `FEntwumS.ContainerExtension/` | The extension under study, as a pinned submodule | Chapters 4 and 5, Appendices A and B | its own: MIT |
-| `OneWare/`, `OneWare.GhdlExtension/`, `FEntwumS.NetlistViewer/` | OneWare Studio and two of its extensions, as pinned submodules for reference | Section 3.1 | their own |
+| `OneWare/`, `OneWare.GhdlExtension/`, `FEntwumS.NetlistViewer/` | OneWare Studio and two of its extensions, as pinned submodules for reference | Section 3.1 (OneWare Studio); the two extensions are not named in the thesis | their own |
 | [`scripts/`](scripts/) | Comparison of a build with the deposited text, reproduction of the result statistics from the raw times, checks of the metadata and of the links | not in the thesis | MIT |
 | [`docs/social/`](docs/social/) | The social card of this repository and the script that renders it | not in the thesis | CC BY 4.0; the script MIT |
 | [`ERRATA.md`](ERRATA.md), [`CHANGELOG.md`](CHANGELOG.md), [`NOTICE`](NOTICE), [`CITATION.cff`](CITATION.cff), [`codemeta.json`](codemeta.json) | Errata, changes, licences and credits, citation metadata | not in the thesis | CC BY 4.0 |
