@@ -63,9 +63,10 @@ Per the measurement-hygiene controls in [evaluation.md](evaluation.md) (quiesce 
 governor to `performance`, keep the machine on AC power), then, on each amd64 host:
 
 ```bash
-# Build the real-strategy harness once per machine.
-dotnet publish evaluation/harness/ContainerBenchmarkHarness.csproj \
-  -c Release -o evaluation/benchmarking_suite/harness_bin
+# Build the real-strategy harness once per machine, in evaluation/, where
+# global.json selects the .NET SDK (10.0.300 or any later 10.0 SDK).
+(cd evaluation && dotnet publish harness/ContainerBenchmarkHarness.csproj \
+  -c Release -o benchmarking_suite/harness_bin)
 
 # Run the full matrix WITH the native baseline (native + docker CLI + the real strategy).
 python3 evaluation/benchmarking_suite/run_evaluation.py \

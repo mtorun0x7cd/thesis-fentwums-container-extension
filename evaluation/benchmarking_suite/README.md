@@ -28,6 +28,8 @@ for the provenance of the committed results and the classification of each numbe
 
 - Python 3.8+ (standard library only for the tables; `pip install matplotlib` is needed for figures).
 - A running container engine (Docker, Podman, OrbStack, ...).
+- For the strategy backend, the .NET SDK 10.0.300 or any later 10.0 SDK, as `../global.json` allows (the
+  three machines ran 10.0.301), and the submodule `FEntwumS.ContainerExtension`.
 - The toolchain image. The measurement used `fentwums/oss-cad-suite:2026-06-30`, built locally from
   `FEntwumS.ContainerExtension/docker/`; it is on no registry. `run_evaluation.py` defaults to
   `fentwums/oss-cad-suite:latest`, a tag the same build sets, and `benchmark.py` on its own to another
@@ -37,7 +39,8 @@ for the provenance of the committed results and the classification of each numbe
 ## Reproduce (run on each machine)
 
 ```bash
-# Build the real-strategy backend once per machine.
+# Build the real-strategy backend once per machine. Run from this folder, so that dotnet reads
+# ../global.json, which selects the SDK.
 dotnet publish ../harness/ContainerBenchmarkHarness.csproj -c Release -o harness_bin
 
 # Run the full workload matrix (docker CLI + the real strategy path).

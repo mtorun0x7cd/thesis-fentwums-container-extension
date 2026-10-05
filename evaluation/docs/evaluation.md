@@ -215,12 +215,14 @@ version in each result file, are the controls behind the reported confidence int
 ### One command per machine
 
 On each host (macOS/arm64, Linux/amd64, Windows/amd64), with a container runtime
-available, build the .NET strategy harness once and run the evaluation:
+and the .NET SDK 10.0.300 or any later 10.0 SDK available (the three machines ran
+10.0.301), build the .NET strategy harness once and run the evaluation:
 
 ```bash
-# Build the real-strategy backend (once per machine).
-dotnet publish evaluation/harness/ContainerBenchmarkHarness.csproj \
-  -c Release -o evaluation/benchmarking_suite/harness_bin
+# Build the real-strategy backend (once per machine), in evaluation/, where
+# global.json selects the .NET SDK.
+(cd evaluation && dotnet publish harness/ContainerBenchmarkHarness.csproj \
+  -c Release -o benchmarking_suite/harness_bin)
 
 # Run the full cross-platform workload matrix (CLI + real strategy) with the
 # image of the measurement.

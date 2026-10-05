@@ -17,7 +17,7 @@ This folder holds what Chapter 6 of the thesis measured and how: the benchmark h
 | [`integration/`](integration/) | The designs of the measured workloads (`iCE40_Flow`, `ECP5_Flow`, `Verilog_Blink`), further fixtures, a smoke runner and a harness smoke test | 6.4 (the three designs); the rest is supplementary | MIT; six fixtures from OneWare Studio are excepted, see [`NOTICE`](../NOTICE) |
 | [`examples/`](examples/) | Eight example projects for the GateMate evaluation board | supplementary, not cited in the thesis | MIT |
 | [`docs/`](docs/) | The methodology and the protocol of the native baseline | 6.3, 6.5.2 | CC BY 4.0 |
-| [`global.json`](global.json) | .NET SDK 10.0.300 or a later feature band; the three machines ran 10.0.301 | 6.2.1 | MIT |
+| [`global.json`](global.json) | .NET SDK 10.0.300 or any later 10.0 SDK, for commands run in this folder; the three machines ran 10.0.301 | 6.2.1 | MIT |
 
 ## Paths named in the thesis
 
@@ -101,7 +101,7 @@ The SHA-256 of `benchmark.py` stands in every Linux and Windows result file; the
 
 ## Rerunning the evaluation
 
-The measurement needs Docker, the .NET SDK and Python 3 on each host, and the submodule `FEntwumS.ContainerExtension`. From the root of a clone:
+The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the three machines ran 10.0.301) and Python 3 on each host, and the submodule `FEntwumS.ContainerExtension`. From the root of a clone:
 
 1. Build the toolchain image. Its inputs are pinned in `FEntwumS.ContainerExtension/docker/oss-cad-suite/Dockerfile`: the Ubuntu base image by digest (`sha256:53958ec7…`) and the oss-cad-suite release 2026-06-30 (`oss-cad-suite-linux-x64-20260630.tgz`) by SHA-256 (`28f10189…`).
 
@@ -110,10 +110,10 @@ The measurement needs Docker, the .NET SDK and Python 3 on each host, and the su
    FEntwumS.ContainerExtension/docker/build_oss_cad_suite.sh     # tags fentwums/oss-cad-suite:2026-06-30
    ```
 
-2. Publish the harness next to the scripts:
+2. Publish the harness next to the scripts. The command runs in `evaluation/`, because `dotnet` reads `global.json` from the working directory and its parents, not from the folder of the project:
 
    ```sh
-   dotnet publish evaluation/harness/ContainerBenchmarkHarness.csproj -c Release -o evaluation/benchmarking_suite/harness_bin
+   (cd evaluation && dotnet publish harness/ContainerBenchmarkHarness.csproj -c Release -o benchmarking_suite/harness_bin)
    ```
 
 3. Run the workload matrix on each host, naming the image of the measurement. `run_evaluation.py` defaults to `fentwums/oss-cad-suite:latest`, a tag the image build sets locally beside the dated one, and `benchmark.py` alone defaults to another image, so pass `--image` every time:
@@ -148,7 +148,7 @@ The result timestamps give the time a run takes, without the image build and the
 The telemetry stress test of Section 6.4.4 is a synthetic microbenchmark of the logging path, not part of the workload matrix. The harness defaults to 1 process, 10 threads and 100 iterations; the thesis ran it with:
 
 ```sh
-dotnet run --project evaluation/harness/ContainerBenchmarkHarness.csproj -c Release -- stress-telemetry --processes 4 --threads 16 --iterations 1000
+(cd evaluation && dotnet run --project harness/ContainerBenchmarkHarness.csproj -c Release -- stress-telemetry --processes 4 --threads 16 --iterations 1000)
 ```
 
 To check that the committed tables follow from the committed raw results, without Docker:
