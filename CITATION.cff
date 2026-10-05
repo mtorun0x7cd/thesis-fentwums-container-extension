@@ -10,8 +10,9 @@ abstract: >-
   2026. It holds the deposited thesis as the version of record, the LaTeX
   sources that reproduce its text, the benchmark harness and the evaluation
   scripts with the data measured on the three test machines, and, as git
-  submodules pinned at the state the thesis describes, the OneWare Studio
-  extension under study and three repositories of the OneWare environment.
+  submodules pinned at their state when the thesis was submitted, the OneWare
+  Studio extension under study and three repositories of the OneWare
+  environment.
 authors:
   - family-names: Torun
     given-names: Mert
