@@ -22,10 +22,22 @@
     "Python 3"
   ],
   "softwareRequirements": [
-    "Docker Engine",
-    ".NET SDK 10.0.300 or later",
-    "OSS CAD Suite 2026-06-30",
-    "TeX Live with LuaLaTeX and Biber"
+    {
+      "@type": "SoftwareApplication",
+      "name": "Docker Engine"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": ".NET SDK 10.0.300 or any later 10.0 SDK"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "OSS CAD Suite 2026-06-30"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "TeX Live with LuaLaTeX and Biber"
+    }
   ],
   "developmentStatus": "https://www.repostatus.org/#inactive",
   "keywords": [

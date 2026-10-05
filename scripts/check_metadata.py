@@ -7,14 +7,19 @@ The three describe one repository and one thesis in three formats, and nothing
 but this check keeps them in step. It compares, between CITATION.cff and
 codemeta.json: the name of the repository, its version, its licence, the
 author with ORCID iD and affiliation, the DOI, the title, the date of
-publication and the licence of the thesis. It also checks that codemeta.json
-types the thesis as schema:Thesis: the CodeMeta 3.0 context defines no term
-Thesis and has no @vocab, so a bare "Thesis" would not expand. It then parses
-the @mastersthesis entry in the README's bibtex block and compares its author,
+publication, the language and the licence of the thesis. It also checks two
+forms that the CodeMeta 3.0 context needs and that JSON-LD expansion would
+otherwise lose without a warning: the context defines neither a term Thesis
+nor a term inLanguage and has no @vocab, so codemeta.json types the thesis as
+schema:Thesis and gives its language as schema:inLanguage; and the context
+reads softwareRequirements as an IRI, so each requirement is a node of type
+SoftwareApplication with a name, not a plain string. It then parses the
+@mastersthesis entry in the README's bibtex block and compares its author,
 title, school, year and DOI with the preferred citation of CITATION.cff.
 
     check_metadata.py            check the three files
-    check_metadata.py --selftest prove that a changed DOI, version, type or title is found
+    check_metadata.py --selftest prove that a changed DOI, version, type, title,
+                                 language or requirement is found
 
 Exit status: 0 they agree, 1 a value differs, 2 a file could not be read.
 Needs PyYAML.
@@ -28,6 +33,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SPDX = "https://spdx.org/licenses/"
 THESIS_TYPE = "schema:Thesis"
+LANGUAGE = "schema:inLanguage"
+REQUIREMENT_TYPE = "SoftwareApplication"
 
 
 class ReadError(Exception):
@@ -91,6 +98,20 @@ def compare(cff, meta, readme):
     same("author ORCID iD", authors[0].get("orcid"), people[0].get("@id"))
     same("affiliation", authors[0].get("affiliation"), (people[0].get("affiliation") or {}).get("name"))
     same("type of the thesis in codemeta.json", ref.get("@type"), THESIS_TYPE)
+    languages = pc.get("languages") or [None]
+    same("language of the thesis (CFF languages, codemeta %s)" % LANGUAGE, languages[0], ref.get(LANGUAGE))
+    if "inLanguage" in ref:
+        found.append("codemeta.json gives the language of the thesis as inLanguage, a term the CodeMeta 3.0 context "
+                     "does not define, so expansion drops it; write %s" % LANGUAGE)
+    requirements = meta.get("softwareRequirements")
+    if not isinstance(requirements, list) or not requirements:
+        found.append("codemeta.json lists no softwareRequirements")
+    else:
+        for item in requirements:
+            if not (isinstance(item, dict) and item.get("@type") == REQUIREMENT_TYPE
+                    and isinstance(item.get("name"), str) and item.get("name").strip()):
+                found.append("softwareRequirements: %r is not a %s node with a name; the CodeMeta 3.0 context reads "
+                             "a plain string there as an IRI" % (item, REQUIREMENT_TYPE))
     same("DOI address", "https://doi.org/" + str(pc.get("doi")), ref.get("@id"))
     same("CFF url of the thesis", pc.get("url"), ref.get("@id"))
     same("title of the thesis", pc.get("title"), ref.get("name"))
@@ -122,6 +143,9 @@ def selftest():
         ("a changed DOI in codemeta.json", lambda c, m, r: (c, dict(m, referencePublication=dict(m["referencePublication"], **{"@id": m["referencePublication"]["@id"] + "0"})), r)),
         ("a changed version in CITATION.cff", lambda c, m, r: (dict(c, version="9.9.9"), m, r)),
         ("a bare Thesis type in codemeta.json", lambda c, m, r: (c, dict(m, referencePublication=dict(m["referencePublication"], **{"@type": "Thesis"})), r)),
+        ("a dropped schema:inLanguage in codemeta.json", lambda c, m, r: (c, dict(m, referencePublication={k: v for k, v in m["referencePublication"].items() if k != LANGUAGE}), r)),
+        ("a bare inLanguage in codemeta.json", lambda c, m, r: (c, dict(m, referencePublication=dict({k: v for k, v in m["referencePublication"].items() if k != LANGUAGE}, inLanguage=m["referencePublication"][LANGUAGE])), r)),
+        ("a requirement written as a plain string", lambda c, m, r: (c, dict(m, softwareRequirements=[m["softwareRequirements"][0]["name"]] + m["softwareRequirements"][1:]), r)),
         ("a changed title in the BibTeX entry", lambda c, m, r: (c, m, r.replace("title  = {Design", "title  = {Desing", 1))),
         ("a second BibTeX entry", lambda c, m, r: (c, m, r + "\n```bibtex\n@mastersthesis{x,\n}\n```\n")),
     ]
@@ -153,7 +177,7 @@ def main(argv):
     for line in found:
         print("  [DIFF] %s" % line)
     if found:
-        print("  [FAIL] CITATION.cff, codemeta.json and the README's BibTeX entry differ in %d place(s)" % len(found))
+        print("  [FAIL] %d finding(s) in CITATION.cff, codemeta.json and the README's BibTeX entry" % len(found))
         return 1
     print("  [OK]   CITATION.cff, codemeta.json and the README's BibTeX entry agree")
     return 0
