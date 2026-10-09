@@ -4,6 +4,12 @@ All notable changes to this repository are listed here. The format follows [Keep
 
 This repository was recreated with a new history on 2026-10-02; the earlier release, v1.0.0 of 2026-08-01, was not the version of record and is withdrawn. Its PDF was built by CI from the sources of that day and was not the deposited thesis.
 
+## [Unreleased]
+
+### Fixed
+
+- `README.md`: the labels of the diagram keep their ends on GitHub at every zoom. Each label breaks its own lines, and the diagram raises Mermaid's wrapping width to 400 px, so that Mermaid wraps none of them; in Safari, a label that Mermaid wrapped could be measured too narrow at some page zooms and lose its end. The wording is unchanged.
+
 ## [1.1.0] - 2026-10-09
 
 ### Added
@@ -52,5 +58,6 @@ Statements in files that the record tag `epub-3597` holds, corrected here; the t
 - `Makefile` and `scripts/compare_pdf_text.py`, which build the thesis and compare its text with the deposited file.
 - `CITATION.cff`, `codemeta.json`, `NOTICE`, `REUSE.toml` and the licence texts.
 
+[Unreleased]: https://github.com/mtorun0x7cd/thesis-fentwums-container-extension/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/mtorun0x7cd/thesis-fentwums-container-extension/compare/epub-3597...v1.1.0
 [epub-3597]: https://github.com/mtorun0x7cd/thesis-fentwums-container-extension/releases/tag/epub-3597

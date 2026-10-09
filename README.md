@@ -202,18 +202,23 @@ E_{\mathrm{native}} & \text{if } S_{\mathrm{dock}} = 0 \land C_{\mathrm{fallback
 ```
 
 ```mermaid
+---
+config:
+  flowchart:
+    wrappingWidth: 400
+---
 flowchart TD
     accTitle: Routing of a tool invocation by the extension
     accDescr: OneWare Studio hands a tool invocation to the extension only if the tool is opted in to the container strategy; otherwise OneWare runs the tool natively. For an opted-in tool, a reachable daemon leads to container execution. If the daemon is unreachable and native fallback is disabled, the invocation fails with a daemon-offline diagnostic. If fallback is enabled, the tool runs on the host when it is on the PATH, and the invocation fails with a missing-binary diagnostic when it is not.
-    start(["OneWare Studio runs a tool"]) --> optin{"Tool opted in to the container strategy?"}
-    optin -->|no| host["OneWare runs the tool natively (default)"]
-    optin -->|yes| sdock{"Daemon socket reachable and writable?"}
-    sdock -->|yes| docker["E_docker: run the tool in a container"]
-    sdock -->|no| fallback{"Native fallback enabled?"}
-    fallback -->|no| offline["Err_offline: fail with a configuration diagnostic"]
-    fallback -->|yes| onpath{"Tool on the host PATH?"}
-    onpath -->|yes| native["E_native: run the host binary"]
-    onpath -->|no| missing["Err_missing: fail, the binary is missing"]
+    start(["OneWare Studio<br/>runs a tool"]) --> optin{"Tool opted in<br/>to the container strategy?"}
+    optin -->|no| host["OneWare runs the tool<br/>natively (default)"]
+    optin -->|yes| sdock{"Daemon socket<br/>reachable and writable?"}
+    sdock -->|yes| docker["E_docker: run the tool<br/>in a container"]
+    sdock -->|no| fallback{"Native fallback<br/>enabled?"}
+    fallback -->|no| offline["Err_offline: fail with<br/>a configuration diagnostic"]
+    fallback -->|yes| onpath{"Tool on the<br/>host PATH?"}
+    onpath -->|yes| native["E_native: run<br/>the host binary"]
+    onpath -->|no| missing["Err_missing: fail,<br/>the binary is missing"]
 ```
 
 The same routing as text: a tool that is not opted in runs natively. An opted-in tool runs in a container when the daemon is reachable. When it is not, the invocation fails with a daemon-offline diagnostic if fallback is disabled; with fallback enabled, the tool runs on the host if it is on the `PATH`, and the invocation fails with a missing-binary diagnostic otherwise.
