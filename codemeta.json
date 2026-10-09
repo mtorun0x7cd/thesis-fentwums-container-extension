@@ -72,6 +72,7 @@
   "referencePublication": {
     "@type": "schema:Thesis",
     "@id": "https://doi.org/10.57683/EPUB-3597",
+    "identifier": "swh:1:rel:848e98bfcfcf28fd73adb42366861b8afa0566ff",
     "name": "Design and Implementation of a Modular Architecture for the Transparent Integration of Containerized Execution Environments for Heterogeneous Open-Source Binaries in OneWare Studio",
     "author": [
       {

@@ -44,6 +44,11 @@ preferred-citation:
     - type: other
       value: "urn:nbn:de:hbz:832-epub4-35974"
       description: URN of the catalogue record
+    - type: swh
+      value: "swh:1:rel:848e98bfcfcf28fd73adb42366861b8afa0566ff"
+      description: >-
+        Software Heritage identifier of the release epub-3597, the repository at
+        the version of record
   license: CC-BY-4.0
   languages:
     - en
