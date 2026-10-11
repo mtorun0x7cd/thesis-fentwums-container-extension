@@ -13,7 +13,7 @@ This folder holds what Chapter 6 of the thesis measured and how: the benchmark h
 | [`benchmarking_suite/benchmark.py`](benchmarking_suite/benchmark.py) | Single-workload driver: warm-up, timing, statistics, environment capture, artifact hashes | 6.3.3, 6.3.4 | MIT |
 | [`benchmarking_suite/run_evaluation.py`](benchmarking_suite/run_evaluation.py) | The workload matrix, one command per machine | 6.3, 6.4 | MIT |
 | [`benchmarking_suite/aggregate.py`](benchmarking_suite/aggregate.py) | Writes `summary.csv`, `summary.md`, `determinism.md` and the figures | 6.4, 6.5.3 | MIT |
-| [`benchmarking_suite/results/`](benchmarking_suite/results/) | Raw results, one JSON file per workload and machine, and the tables and figures derived from them; under `supplementary/`, the original files of the cross-host control | Tables 6.1 to 6.4; 6.5.3 | CC BY 4.0 |
+| [`benchmarking_suite/results/`](benchmarking_suite/results/) | Raw results, one JSON file per workload and machine, and the tables and figures derived from them; under `supplementary/`, the original files of the cross-host control. The opening paragraph of `determinism.md` is read with the scope that [Claims and their evidence](#claims-and-their-evidence) gives it under 6.5.3 | Tables 6.1 to 6.4; 6.5.3 | CC BY 4.0 |
 | [`integration/`](integration/) | The designs of the measured workloads (`iCE40_Flow`, `ECP5_Flow`, `Verilog_Blink`), further fixtures, a smoke runner and a harness smoke test | 6.4 (the three designs); the rest is supplementary | MIT; six fixtures from OneWare Studio are excepted, see [`NOTICE`](../NOTICE) |
 | [`examples/`](examples/) | Eight example projects for the GateMate evaluation board | supplementary, not cited in the thesis | MIT |
 | [`docs/`](docs/) | The methodology and the protocol of the native baseline | 6.3, 6.5.2 | CC BY 4.0 |
@@ -47,7 +47,7 @@ Each quantitative statement of Chapter 6 is classified as one of: *measured here
 | 6.5.1, 6.5.5 | 8.94 % average penalty of the hardware TSO mode | Reference [15] of the thesis | cited; see E-021 |
 | 6.5.2 | Version parity of Yosys, GHDL and Icarus Verilog on Machine 2 | `experiment.native_tool_version` in the Linux result files holds the native strings of Yosys and Icarus Verilog; nextpnr, icepack and ecppack are recorded as unresolved | measured here for Yosys and Icarus Verilog; the GHDL check is in the `machine.json` of Machine 2, which the author keeps ([run records](#the-run-records-of-machines-2-and-3)) |
 | 6.5.2 | The parity gate rejecting the Windows native toolchain (MinGW build) | the notes of the first Windows run, which the author keeps ([run records](#the-run-records-of-machines-2-and-3)) | measured, evidence not in this repository |
-| 6.5.3, Table 6.4 | Six FPGA artifacts byte-identical on three hosts; `Blink.vvp` different | `output_artifacts_sha256` in the result files, [`results/determinism.md`](benchmarking_suite/results/determinism.md) | measured here |
+| 6.5.3, Table 6.4 | Six FPGA artifacts byte-identical on three hosts; `Blink.vvp` different | `output_artifacts_sha256` in the result files, [`results/determinism.md`](benchmarking_suite/results/determinism.md) | measured here. The opening paragraph of `determinism.md` is the text `aggregate.py` writes, kept as generated; it is read with the scope of item 2 of [`benchmarking_suite/README.md`](benchmarking_suite/README.md): identical hashes show that the toolchain pinned in the image gives the same outputs on each host, for the corpus, the hosts and the runtimes measured. The thesis calls them direct evidence of machine independence; see E-044 |
 | 6.5.3 | Image digests `90b9ccab` (Machine 1, built on the host) and `6a7572d6` (Machines 2 and 3) | `experiment.image_digest` in the result files | measured here |
 | 6.5.3 | The image Machine 3 ran, exported with `docker save` and loaded unchanged on Machine 1, gives the same six FPGA artifacts there | [`results/supplementary/shared-image-control/`](benchmarking_suite/results/supplementary/shared-image-control/): the six result files of that run and the note written with them | measured here; see [the cross-host control](#the-cross-host-control) |
 | 6.5.3 | `Blink.vvp` differs between two runs on Machine 3 | [`results/windows-amd64/sim_iverilog.json`](benchmarking_suite/results/windows-amd64/sim_iverilog.json) records two hashes of it, `0d8322d8717e…` under `output_artifacts_sha256` and `339add01959c…` under `experiment.input_file_sha256`, and [`results/linux-amd64/sim_iverilog.json`](benchmarking_suite/results/linux-amd64/sim_iverilog.json) likewise `229bc0467b2f…` and `a18ca02f1188…`. `benchmark.py` takes the first after the timed runs and the second when it writes the result, after one more, untimed run of the strategy backend that reads the peak memory of the container; that run compiled the file again, and Icarus Verilog names objects after heap addresses. The note to Table 6.4 compares the first and the second run of Machine 3, as the notes of the second run record ([run records](#the-run-records-of-machines-2-and-3)) | measured here |
@@ -92,6 +92,22 @@ The result files record which `benchmark.py` ran, by its SHA-256, and the result
 | `integration/run_harness_smoke.sh` | no run of it is cited in the thesis | on 2026-09-07, in the earlier repository (commit `57231c7`): the paths of this layout, a check that names a missing path, and a build phase of its own for the harness; on 2026-10-05, the comment on the layout, which had called the submodule vendored sources |
 | `harness/Program.cs`, `harness/link.xml` | Machine 1: the state of `1884317`. Machine 2: not recorded. Machine 3: the files of this folder, as the copies in its run kit show ([run records](#the-run-records-of-machines-2-and-3)) | no: byte-identical with `1884317` |
 | `harness/ContainerBenchmarkHarness.csproj` | as for `Program.cs` | the form of the package versions and the path of the project reference, as first committed on 2026-07-12, and the property `RestorePackagesWithLockFile` since 2026-10-05 |
+
+### The three figures
+
+`aggregate.py` draws one bar chart per machine from the result files. Each bar is the mean execution time of one workload through the strategy backend, the extension's code path, and each whisker the 95 % confidence interval of that mean; the times include the fixed cost of a container invocation, which the workload `lifecycle_floor` shows alone. The title in each image is the one `aggregate.py` writes. The alternative texts give the means rounded to 0.01 s; the result files hold them in full.
+
+![Bar chart of the mean execution time of eight workloads through the strategy backend on Machine 1 (macOS on Apple Silicon, the amd64 image under Rosetta 2), each bar with a whisker for its 95 % confidence interval: lifecycle_floor 0.45 s, pack_ecp5_ecppack 1.18 s, pack_ice40_icepack 0.56 s, pnr_ecp5_nextpnr 1.19 s, pnr_ice40_nextpnr 0.82 s, sim_iverilog 0.71 s, synth_ecp5_yosys 1.31 s, synth_ice40_yosys 1.50 s.](benchmarking_suite/results/figures/time_macos-arm64.png)
+
+*`time_macos-arm64.png`: Machine 1 (macOS on Apple Silicon, the amd64 image under Rosetta 2).*
+
+![Bar chart of the mean execution time of eight workloads through the strategy backend on Machine 2 (Linux, x86_64), each bar with a whisker for its 95 % confidence interval: lifecycle_floor 0.51 s, pack_ecp5_ecppack 1.00 s, pack_ice40_icepack 0.52 s, pnr_ecp5_nextpnr 0.87 s, pnr_ice40_nextpnr 0.56 s, sim_iverilog 0.52 s, synth_ecp5_yosys 0.77 s, synth_ice40_yosys 0.82 s.](benchmarking_suite/results/figures/time_linux-amd64.png)
+
+*`time_linux-amd64.png`: Machine 2 (Linux, x86_64).*
+
+![Bar chart of the mean execution time of eight workloads through the strategy backend on Machine 3 (Windows, x86_64), each bar with a whisker for its 95 % confidence interval: lifecycle_floor 0.68 s, pack_ecp5_ecppack 1.33 s, pack_ice40_icepack 0.70 s, pnr_ecp5_nextpnr 1.40 s, pnr_ice40_nextpnr 2.19 s, sim_iverilog 0.68 s, synth_ecp5_yosys 1.16 s, synth_ice40_yosys 1.18 s.](benchmarking_suite/results/figures/time_windows-amd64.png)
+
+*`time_windows-amd64.png`: Machine 3 (Windows, x86_64).*
 
 ### The cross-host control
 

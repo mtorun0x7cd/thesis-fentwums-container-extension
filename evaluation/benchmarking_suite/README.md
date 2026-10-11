@@ -70,7 +70,7 @@ python3 aggregate.py
 This produces, under `results/`:
 
 - `summary.csv`: one row per platform × workload × backend (mean, 95% CI, CV, native overhead, p-value).
-- `determinism.md`: the cross-platform artifact-hash matrix (do the bitstreams match across machines?).
+- `determinism.md`: the cross-platform artifact-hash matrix (do the bitstreams match across machines?). Its opening paragraph is the text `aggregate.py` writes, kept as generated, and is read with the scope of item 2 above: identical hashes show that the toolchain pinned in the image gives the same outputs on each host, for the corpus, the hosts and the runtimes measured.
 - `summary.md`: a human-readable overview grouped by platform.
 - `figures/time_<platform>.png`: mean execution time with 95% CI error bars (requires matplotlib).
 
