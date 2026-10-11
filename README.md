@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # Design and Implementation of a Modular Architecture for the Transparent Integration of Containerized Execution Environments for Heterogeneous Open-Source Binaries in OneWare Studio
 
-Companion repository of the Master's thesis by Mert Torun, submitted to TH Köln, Faculty of Information, Media and Electrical Engineering, in 2026. Version of record: <https://doi.org/10.57683/EPUB-3597>
+Companion repository of the Master's thesis by Mert Torun, submitted to TH Köln, Faculty of Information, Media and Electrical Engineering, in 2026; besides the deposited PDF, it holds the LaTeX sources, the benchmark harness with the raw results and tables of three machines, and the pinned OneWare Studio extension that runs FPGA toolchains in Docker containers. Version of record: <https://doi.org/10.57683/EPUB-3597>
 
 [![DOI: 10.57683/EPUB-3597](https://img.shields.io/badge/DOI-10.57683%2FEPUB--3597-1D4ED8?style=flat)](https://doi.org/10.57683/EPUB-3597) [![Thesis: CC BY 4.0](https://img.shields.io/badge/Thesis-CC_BY_4.0-1D4ED8?style=flat)](LICENSES/CC-BY-4.0.txt) [![Code: MIT](https://img.shields.io/badge/Code-MIT-1D4ED8?style=flat)](LICENSE) [![Status: Inactive](https://img.shields.io/badge/Status-Inactive-1D4ED8?style=flat)](https://www.repostatus.org/#inactive)
 
@@ -240,9 +240,9 @@ The evaluation used one runtime per host: OrbStack on Machine 1 (macOS), Docker 
 Each result holds for the corpus, the hosts and the runtimes the thesis measured; [`evaluation/README.md`](evaluation/README.md#claims-and-their-evidence) gives the evidence of each.
 
 - **Output determinism.** The six FPGA artifacts of the corpus, iCE40 and ECP5 synthesis, place-and-route and bitstream packing, were byte-identical on the three machines, one ARM64 host running the amd64 image under emulation and two x86_64 hosts; the simulation artifact `Blink.vvp` differs from run to run because Icarus Verilog names objects after heap addresses, and is excluded (Section 6.5.3, Table 6.4).
-- **Marginal cost of the extension.** Over raw `docker run`, the extension adds a fixed per-invocation cost and no cost that grows with the work: the mean strategy-minus-CLI difference over the FPGA workloads is about 0.18 s on Machine 1, 0.21 s on Machine 2 and 0.23 s on Machine 3, the last without the bimodal `pnr_ice40_nextpnr` run, close to the difference of a no-op container invocation (Sections 6.4.1 to 6.4.3; [`ERRATA.md`](ERRATA.md), E-019). The harness measured these differences with the extension's telemetry and SDK logging switched off and, on Machine 3, with its check of the named-pipe server switched on, which the extension skips by default; the share of that check in the 0.23 s was not measured ([`evaluation/README.md`](evaluation/README.md#limits)).
+- **Marginal cost of the extension.** Over raw `docker run`, the extension adds a fixed per-invocation cost and no cost that grows with the work: the mean strategy-minus-CLI difference over the FPGA workloads is about 0.18 s on Machine 1, 0.21 s on Machine 2 and 0.23 s on Machine 3, the last without the bimodal `pnr_ice40_nextpnr` run, close to the difference of a no-op container invocation (Sections 6.4.1 to 6.4.3; [`ERRATA.md`](ERRATA.md), [E-019](ERRATA.md#e-019)). The harness measured these differences with the extension's telemetry and SDK logging switched off and, on Machine 3, with its check of the named-pipe server switched on, which the extension skips by default; the share of that check in the 0.23 s was not measured ([`evaluation/README.md`](evaluation/README.md#limits)).
 - **Container against native.** On Machine 2, whose native toolchain is the same build as the image, the additive container floor stays between 0.258 s and 0.327 s while the native work ranges from 16 ms to 0.51 s: the multiplier α of native compute is about 1 there (Sections 6.4.2 and 6.5.1).
-- **Emulation.** On Machine 1 the amd64 image runs under Rosetta 2, so no native baseline was taken and α is not measured for emulation; the thesis cites a penalty of the hardware TSO mode from the literature (Section 6.5.1; E-021 and E-032).
+- **Emulation.** On Machine 1 the amd64 image runs under Rosetta 2, so no native baseline was taken and α is not measured for emulation; the thesis cites a penalty of the hardware TSO mode from the literature (Section 6.5.1; [E-021](ERRATA.md#e-021) and [E-032](ERRATA.md#e-032)).
 
 ### Security design properties
 
@@ -251,11 +251,11 @@ The thesis states these as design properties of the architecture; a threat-model
 - **Non-root execution.** On rootful runtimes the container runs as the host user (`--user` with the host UID:GID), so build artifacts belong to the developer; on rootless runtimes the runtime's own user-namespace remap applies and `--user` is omitted.
 - **Reduced kernel surface.** All Linux capabilities are dropped, `no-new-privileges` is set and the process count is capped; the runtime's default seccomp profile applies.
 - **Workspace path containment.** Bind-mount paths are canonicalised segment by segment, with cycle detection and a bounded depth; a path outside the workspace root is not mounted. A time-of-check to time-of-use window remains (Section 4.4).
-- **Shell-less execution.** Commands run as an argument vector with `tini` as PID 1, so shell metacharacters are inert; a secondary check rejects arguments that embed command separators (Sections 4.4 and 5.7; E-030).
+- **Shell-less execution.** Commands run as an argument vector with `tini` as PID 1, so shell metacharacters are inert; a secondary check rejects arguments that embed command separators (Sections 4.4 and 5.7; [E-030](ERRATA.md#e-030)).
 - **Windows transport.** The named-pipe client requests the impersonation level Identification, so a daemon endpoint can identify the client but cannot act on its behalf (Section 5.3).
 - **Resource bounds.** CPU, memory and process-count limits apply through the runtime's cgroup controls.
 
-The extension is built with `IsAotCompatible` set and uses explicit reflection at one documented place: it replaces the stream opener of the Windows named-pipe transport through a private field of the Docker.DotNet library, because the public API cannot express the lower impersonation level (Section 5.3.1; `DockerExecutionStrategy.cs`, lines 1162 to 1186 at `5fa2f5f`). That count covers explicit reflection calls only: Docker.DotNet serialises through Newtonsoft.Json, which one view model of the extension uses as well, and the extension preserves both assemblies from trimming. No Native-AOT build was tested in the thesis ([`ERRATA.md`](ERRATA.md), E-015).
+The extension is built with `IsAotCompatible` set and uses explicit reflection at one documented place: it replaces the stream opener of the Windows named-pipe transport through a private field of the Docker.DotNet library, because the public API cannot express the lower impersonation level (Section 5.3.1; `DockerExecutionStrategy.cs`, lines 1162 to 1186 at `5fa2f5f`). That count covers explicit reflection calls only: Docker.DotNet serialises through Newtonsoft.Json, which one view model of the extension uses as well, and the extension preserves both assemblies from trimming. No Native-AOT build was tested in the thesis ([`ERRATA.md`](ERRATA.md), [E-015](ERRATA.md#e-015)).
 
 ## Contents
 
@@ -270,6 +270,9 @@ The extension is built with `IsAotCompatible` set and uses explicit reflection a
 | [`docs/social/`](docs/social/) | The social card of this repository and the script that renders it | not in the thesis | CC BY 4.0; the script MIT |
 | [`ERRATA.md`](ERRATA.md), [`CHANGELOG.md`](CHANGELOG.md), [`NOTICE`](NOTICE), [`CITATION.cff`](CITATION.cff), [`codemeta.json`](codemeta.json) | Errata, changes, licences and credits, citation metadata | not in the thesis | CC BY 4.0 |
 | [`Makefile`](Makefile), [`.github/`](.github/) | Build and checks, workflows, the correction form | not in the thesis | MIT |
+| [`SECURITY.md`](SECURITY.md), [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to report a matter privately, and how corrections are made | not in the thesis | CC BY 4.0 |
+| `LICENSE`, `LICENSES/`, `REUSE.toml` | The MIT text, the texts of the licences that files use, and the licence of every path without a header | not in the thesis | none of their own: REUSE 3.3 exempts them from its check |
+| `.editorconfig`, `.gitattributes`, `.gitignore`, `.markdownlint.jsonc`, `.chktexrc`, `.gitmodules`, `.githooks/`, `.gitleaks.toml` | Editor, git, lint and build configuration, and the opt-in secret scan for clones with its configuration | not in the thesis | MIT |
 
 ### Paths named in the thesis
 
@@ -317,7 +320,15 @@ make verify-deposit   # checks publication/ against SHA256SUMS and compares the 
 make check            # runs ChkTeX over the sources
 ```
 
-The build date is fixed to the creation date of the deposited file (`SOURCE_DATE_EPOCH=1783019135`), and a build carries the title, author, subject, keywords and dates of the deposited file. As `pdfinfo` and `qpdf` show, its other document-level entries differ: a build writes those four text entries in UTF-16, names LaTeX with hyperref as creator and the LuaTeX that typeset it as producer (LuaTeX-1.24.0 with TeX Live 2026), adds the entries PTEX.FullBanner and Trapped, and carries page labels, named destinations, an open action and a page mode; the deposited file names LaTeX as creator and no producer, carries an empty XMP packet, gives the page width as 595.28 instead of 595.276 points and is linearised. The sources reproduce the text of the deposited file, not its bytes: after typesetting, the deposited file was processed outside this repository, among other things linearised and given new metadata. [`scripts/compare_pdf_text.py`](scripts/compare_pdf_text.py) compares the two texts page by page as multisets of words, which keeps a hyphen and an en dash apart. On 2026-10-02 the tag `epub-3597`, typeset twice in one directory with TeX Live 2026 on macOS, gave the same bytes both times, and its text equals that of the deposited file on all 106 pages, though one paragraph on PDF page 37 breaks its lines differently and, as measured on 2026-10-05, the block on the title page from "Institution:" to the names of the supervisors sits 36.8 pt (about 13 mm) lower than in the deposited file ([`publication/README.md`](publication/README.md#relation-to-the-sources)); the PDF identifier depends on the directory a build runs in. CI typesets the thesis in the container `ghcr.io/xu-cheng/texlive-full@sha256:11383430b9a3e48c0b79339f34d8092f942f897d91ab3749d4899d06731fea7f`, twice, compares the two files byte for byte and records the TeX Live version in its log; its artifact is a build, not the version of record.
+The sources reproduce the text of the deposited file, not its bytes: after typesetting, the deposited file was processed outside this repository, among other things linearised and given new metadata. The build date is fixed to the creation date of the deposited file (`SOURCE_DATE_EPOCH=1783019135`).
+
+| A build | Against the deposited file |
+| --- | --- |
+| Equal | The title, author, subject, keywords and dates of the deposited file. The text: [`scripts/compare_pdf_text.py`](scripts/compare_pdf_text.py) compares the two texts page by page as multisets of words, which keeps a hyphen and an en dash apart |
+| Different | As `pdfinfo` and `qpdf` show, its other document-level entries: a build writes those four text entries in UTF-16, names LaTeX with hyperref as creator and the LuaTeX that typeset it as producer (LuaTeX-1.24.0 with TeX Live 2026), adds the entries PTEX.FullBanner and Trapped, and carries page labels, named destinations, an open action and a page mode; the deposited file names LaTeX as creator and no producer, carries an empty XMP packet, gives the page width as 595.28 instead of 595.276 points and is linearised |
+| Measured | On 2026-10-02 the tag `epub-3597`, typeset twice in one directory with TeX Live 2026 on macOS, gave the same bytes both times, and its text equals that of the deposited file on all 106 pages, though one paragraph on PDF page 37 breaks its lines differently and, as measured on 2026-10-05, the block on the title page from "Institution:" to the names of the supervisors sits 36.8 pt (about 13 mm) lower than in the deposited file ([`publication/README.md`](publication/README.md#relation-to-the-sources)); the PDF identifier depends on the directory a build runs in |
+
+CI typesets the thesis in the container `ghcr.io/xu-cheng/texlive-full@sha256:11383430b9a3e48c0b79339f34d8092f942f897d91ab3749d4899d06731fea7f`, twice, compares the two files byte for byte and records the TeX Live version in its log; its artifact is a build, not the version of record.
 
 ### The evaluation
 
@@ -331,14 +342,16 @@ The measurement needs Docker, the .NET SDK 10.0.300 or any later 10.0 SDK (the t
 > [!NOTE]
 > The toolchain image is build-only and is not on a registry, so a rebuilt image has its own digest (Section 6.5.3). The check of a rerun is the six FPGA artifact hashes that [`evaluation/README.md`](evaluation/README.md#rerunning-the-evaluation) lists in full, not the image digest. A run took about 7 minutes on Machine 1, 16 minutes on Machine 2 with the native baseline and 10 minutes on Machine 3, without the image build.
 
-`make aggregate-check` recomputes, without Docker, the statistics of every result file from its raw times and the committed tables from the result files: all 96 statistics and comparison blocks are reproduced within a relative tolerance of 1e-9, `summary.md` and `determinism.md` come out byte-identical, and `summary.csv` identical up to its line endings.
+`make aggregate-check` recomputes, without Docker, the statistics of every result file from its raw times and the committed tables from the result files: all 96 statistics and comparison blocks are reproduced within a relative tolerance of 1e-9, `summary.md` and `determinism.md` come out byte-identical, and `summary.csv` identical up to its line endings. `aggregate.py` needs matplotlib for the figures only; the tables, [`scripts/check_result_statistics.py`](scripts/check_result_statistics.py) and so `make aggregate-check` need nothing beyond the standard library of Python.
 
 ### The checks CI runs
 
 - [`build.yml`](.github/workflows/build.yml): ChkTeX; the thesis typeset twice and compared; the deposited file against `SHA256SUMS`; then the text of the build against the deposited file.
-- [`checks.yml`](.github/workflows/checks.yml): `SHA256SUMS`; `CITATION.cff` with cffconvert and against schema 1.2.0 through a plain YAML loader; `codemeta.json` expanded as JSON-LD; the agreement of `CITATION.cff`, `codemeta.json` and the BibTeX entry below; REUSE; and the links to doi.org, nbn-resolving.org and the GitHub addresses of this repository and of the pins, a check that runs on push and is not required.
+- [`checks.yml`](.github/workflows/checks.yml): `SHA256SUMS`; `CITATION.cff` with cffconvert and against schema 1.2.0 through a plain YAML loader; `codemeta.json` expanded as JSON-LD; the agreement of `CITATION.cff`, `codemeta.json` and the BibTeX entry below, and the index of `ERRATA.md` against its entries; REUSE; and the links to doi.org, nbn-resolving.org and the GitHub addresses of this repository and of the pins, a check that runs on push and is not required.
 - [`evaluation.yml`](.github/workflows/evaluation.yml): the statistics and tables recomputed from the raw results, the SHA-256 of `benchmark.py`, a build of the harness with the SDK of `evaluation/global.json`, and a compile of the Python scripts.
 - [`docs.yml`](.github/workflows/docs.yml) lints the Markdown files; [`secret-scan.yml`](.github/workflows/secret-scan.yml) scans the history with gitleaks.
+
+[`scripts/check_metadata.py`](scripts/check_metadata.py) needs PyYAML. For `checks.yml`, CI installs cffconvert 2.0.0, PyYAML 6.0.2, pyld 2.0.4 and reuse 5.0.2.
 
 ## Limitations
 
@@ -353,13 +366,13 @@ Beyond these, [`evaluation/README.md`](evaluation/README.md#limits) names what i
 
 A rerun also depends on what this repository does not hold. Building the toolchain image fetches two third-party artifacts, the Ubuntu base image and the oss-cad-suite archive, both pinned by hash and neither archived with this repository, and installs distribution packages that are not pinned; once either artifact is no longer served, the image cannot be rebuilt. The six artifact hashes of [`evaluation/README.md`](evaluation/README.md#rerunning-the-evaluation) remain the check of any toolchain with the same tool binaries.
 
-Of the thesis itself: Section 7.1 states as a result that "The solution eliminates “Environment Drift”" and that the container "resolves cascading dependency conflicts", the conclusion on which the abstract ends. The evaluation "contains no run in which a native toolchain failed or hung because of package drift, and no test of dependency conflicts"; both statements describe "the intended effect of pinning the toolchain in an image, not a result of the evaluation" ([`ERRATA.md`](ERRATA.md), E-031). RQ2 "is assessed qualitatively against the implemented behavior" (Section 1.3). The security properties are stated "as design properties; a systematic threat-model analysis of them is the subject of separate work and is deliberately out of scope for this thesis" (Section 4.4). Under emulation the translation tax is not measured, and the figure the thesis cites for it does not measure Rosetta 2: "α under emulation is not quantified in the work" (E-021, E-032).
+Of the thesis itself: Section 7.1 states as a result that "The solution eliminates “Environment Drift”" and that the container "resolves cascading dependency conflicts", the conclusion on which the abstract ends. The evaluation "contains no run in which a native toolchain failed or hung because of package drift, and no test of dependency conflicts"; both statements describe "the intended effect of pinning the toolchain in an image, not a result of the evaluation" ([`ERRATA.md`](ERRATA.md), [E-031](ERRATA.md#e-031)). RQ2 "is assessed qualitatively against the implemented behavior" (Section 1.3). The security properties are stated "as design properties; a systematic threat-model analysis of them is the subject of separate work and is deliberately out of scope for this thesis" (Section 4.4). Under emulation the translation tax is not measured, and the figure the thesis cites for it does not measure Rosetta 2: "α under emulation is not quantified in the work" ([E-021](ERRATA.md#e-021), [E-032](ERRATA.md#e-032)).
 
 Future work, as Section 7.3 of the deposited thesis lists it:
 
 1. "Multi-Architecture OCI Registry Manifests: Optimizing cross-architecture performance on ARM64 host machines by dynamically querying OCI Registry Manifests to verify the existence of native linux/arm64 image variants before falling back to Rosetta 2 translation or QEMU emulation."
 2. "Hardware-in-the-Loop (HIL) Sandboxing: Integrating USB device forwarding mechanisms (e.g., forwarding FTDI or UART devices via usbipd or native Linux device nodes) to allow programmer tools like openFPGALoader and iceprog to deploy compiled bitstreams directly onto target FPGA boards securely from within the sandbox."
-3. "VIMS IEEE Telemetry Integration: Aligning the plugin’s telemetry and benchmarking engine with standardized IEEE Virtual Instrumentation and Measurement Systems formats to enable unified reporting of verification durations, success metrics, and resource footprints." No IEEE standard or format of this name could be traced ([`ERRATA.md`](ERRATA.md), E-033).
+3. "VIMS IEEE Telemetry Integration: Aligning the plugin’s telemetry and benchmarking engine with standardized IEEE Virtual Instrumentation and Measurement Systems formats to enable unified reporting of verification durations, success metrics, and resource footprints." No IEEE standard or format of this name could be traced ([`ERRATA.md`](ERRATA.md), [E-033](ERRATA.md#e-033)).
 
 The thesis also leaves a systematic comparison of container runtimes (Section 7.2) and a dedicated threat-model analysis of the security design properties (Sections 4.4 and 7.2) to further work.
 
@@ -369,7 +382,7 @@ The deposited PDF is untagged and declares no document language. As the version 
 
 ## Corrections
 
-[`ERRATA.md`](ERRATA.md) lists the known errors of the thesis, the properties of its catalogue record and of the deposited file, and the web addresses of the thesis that no longer work or have moved. The deposited file does not change: a confirmed error is added to `ERRATA.md`, and an error that affects a result is reported to the library.
+[`ERRATA.md`](ERRATA.md) lists the known errors of the thesis, the properties of its catalogue record and of the deposited file, and the web addresses of the thesis that no longer work or have moved. The deposited file does not change: a confirmed error is added to `ERRATA.md`.
 
 To report an error, open an issue with the form **Correction** and give the location in the thesis or the file, the quoted text, the proposed correction and the evidence. A matter that should not be public goes by e-mail to [info@mtorun0x7cd.com](mailto:info@mtorun0x7cd.com), as [`SECURITY.md`](SECURITY.md) describes. Changes of the extension itself belong upstream ([`CONTRIBUTING.md`](CONTRIBUTING.md)). [`CHANGELOG.md`](CHANGELOG.md) lists the changes of this repository.
 
@@ -396,12 +409,18 @@ BibTeX:
 
 GitHub's "Cite this repository" reads [`CITATION.cff`](CITATION.cff) and renders the thesis as `@misc`, without its school; the entry above cites it as a Master's thesis.
 
+### Citing the code
+
+`swh:1:rel:848e98bfcfcf28fd73adb42366861b8afa0566ff` identifies the release `epub-3597`, the repository at the version of record, in the Software Heritage archive; the thesis is cited by its DOI above.
+
+[![Archived: release epub-3597](https://archive.softwareheritage.org/badge/swh:1:rel:848e98bfcfcf28fd73adb42366861b8afa0566ff/)](https://archive.softwareheritage.org/swh:1:rel:848e98bfcfcf28fd73adb42366861b8afa0566ff)
+
 ## Related works
 
 - [FEntwumS.ContainerExtension](https://github.com/FEntwumS/FEntwumS.ContainerExtension): the extension the thesis designs and evaluates, maintained upstream in the repository of the FEntwumS organisation; this repository pins it at `5fa2f5f`.
 - [OneWare Studio](https://github.com/one-ware/OneWare): the IDE the extension integrates with (Section 3.1).
 
-## License
+## Licence
 
 | Path | Licence |
 | --- | --- |
