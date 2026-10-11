@@ -508,3 +508,14 @@ Every web address in the reference list and in Appendix A was requested on 2026-
 - **[16], p. 79 (PDF p. 94):** https://docs.docker.com/desktop/mac/ now redirects to the general Docker Desktop page (https://docs.docker.com/desktop/); the cited page on file-sharing performance is no longer at this address.
 - **[22], p. 80 (PDF p. 95):** https://docs.docker.com/engine/api now redirects to https://docs.docker.com/reference/api/engine/.
 - **[29], p. 80 (PDF p. 95):** https://teroshdl.github.io returns HTTP status 404 (not found).
+### E-044
+
+- **Location:** p. 64 (PDF p. 79), Section 6.5.3
+- **Quoted text:** "identical hashes across one ARM64-hosted and two independent x86_64-hosted executions of the image are direct evidence of machine independence"
+- **Correction:** The comparison supports less than machine independence. Table 6.4 (p. 65) compares six artifacts, the synthesis, place-and-route and bitstream outputs of one iCE40 and one ECP5 design, on three machines, each with one container runtime: Machine 1 (macOS on Apple Silicon, OrbStack, the amd64 image under Rosetta 2), Machine 2 (Linux, x86_64, Docker Engine) and Machine 3 (Windows, x86_64, Docker Desktop with the WSL2 backend). All three ran the same pinned toolchain, in two builds of the image that hold the same tool binaries. Identical hashes there show that the toolchain pinned in the image gave the same outputs on these three hosts for these six artifacts; they are not direct evidence that the outputs are independent of the machine in general, on other hosts or runtimes, for other designs or with another toolchain. Read: "identical hashes across one ARM64-hosted and two independent x86_64-hosted executions of the image show that the pinned toolchain gave the same outputs on these three hosts".
+- **Class:** claim not supported by the work's evidence
+- **Evidence:** The work itself: Section 6.2.1 (pp. 53-54) for the three machines and their runtimes; Section 6.5.3 and Table 6.4 (pp. 64-65) for the six artifacts and the two builds of the image.
+- **Found:** 2026-10-11
+- **Reported:** not reported
+- **Status:** confirmed
+
