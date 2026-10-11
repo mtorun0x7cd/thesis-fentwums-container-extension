@@ -8,6 +8,55 @@ To report an error, open an issue with the form Correction or write to info@mtor
 
 ## Errata
 
+The 44 entries by class: 20 "factual, not affecting results"; 14 "claim not supported by the work's evidence"; 8 "attribution"; 2 "reference could not be traced".
+
+| Entry | Location | Class | Status |
+| --- | --- | --- | --- |
+| [E-001](#e-001) | p. 1 (PDF p. 16) | factual, not affecting results | confirmed |
+| [E-002](#e-002) | p. 2 (PDF p. 17) | factual, not affecting results | confirmed |
+| [E-003](#e-003) | p. 12 (PDF p. 27) | attribution | confirmed |
+| [E-004](#e-004) | p. 14 (PDF p. 29) | attribution | confirmed |
+| [E-005](#e-005) | p. 14 (PDF p. 29) | attribution | confirmed |
+| [E-006](#e-006) | p. 17 (PDF p. 32) | attribution | confirmed |
+| [E-007](#e-007) | p. 21 (PDF p. 36) | attribution | confirmed |
+| [E-008](#e-008) | p. 21 (PDF p. 36) | factual, not affecting results | confirmed |
+| [E-009](#e-009) | p. 22 (PDF p. 37) | factual, not affecting results | confirmed |
+| [E-010](#e-010) | p. 30 (PDF p. 45) | factual, not affecting results | confirmed |
+| [E-011](#e-011) | p. 37 (PDF p. 52) | claim not supported by the work's evidence | confirmed |
+| [E-012](#e-012) | pp. 39-40 (PDF pp. 54-55) | factual, not affecting results | confirmed |
+| [E-013](#e-013) | p. 42 (PDF p. 57) | factual, not affecting results | confirmed |
+| [E-014](#e-014) | p. 54 (PDF p. 69) | factual, not affecting results | confirmed |
+| [E-015](#e-015) | p. 55 (PDF p. 70) | claim not supported by the work's evidence | confirmed |
+| [E-016](#e-016) | p. 55 (PDF p. 70) | claim not supported by the work's evidence | confirmed |
+| [E-017](#e-017) | p. 55 (PDF p. 70) | claim not supported by the work's evidence | confirmed |
+| [E-018](#e-018) | p. 56 (PDF p. 71) | factual, not affecting results | confirmed |
+| [E-019](#e-019) | p. 61 (PDF p. 76) | factual, not affecting results | confirmed |
+| [E-020](#e-020) | p. 61 (PDF p. 76) | claim not supported by the work's evidence | confirmed |
+| [E-021](#e-021) | p. 63 (PDF p. 78) | attribution | confirmed |
+| [E-022](#e-022) | p. 64 (PDF p. 79) | claim not supported by the work's evidence | confirmed |
+| [E-023](#e-023) | p. 66 (PDF p. 81) | claim not supported by the work's evidence | confirmed |
+| [E-024](#e-024) | p. 68 (PDF p. 83) | claim not supported by the work's evidence | confirmed |
+| [E-025](#e-025) | p. 69 (PDF p. 84) | claim not supported by the work's evidence | confirmed |
+| [E-026](#e-026) | pp. 69-70 (PDF pp. 84-85) | claim not supported by the work's evidence | confirmed |
+| [E-027](#e-027) | p. 71 (PDF p. 86) | claim not supported by the work's evidence | confirmed |
+| [E-028](#e-028) | p. 71 (PDF p. 86) | factual, not affecting results | confirmed |
+| [E-029](#e-029) | p. 71 (PDF p. 86) | factual, not affecting results | confirmed |
+| [E-030](#e-030) | p. 72 (PDF p. 87) | factual, not affecting results | confirmed |
+| [E-031](#e-031) | p. iii (PDF p. 4) | claim not supported by the work's evidence | confirmed |
+| [E-032](#e-032) | p. 76 (PDF p. 91) | claim not supported by the work's evidence | confirmed |
+| [E-033](#e-033) | p. 77 (PDF p. 92) | reference could not be traced | confirmed |
+| [E-034](#e-034) | p. 78 (PDF p. 93) | attribution | confirmed |
+| [E-035](#e-035) | p. 78 (PDF p. 93) | factual, not affecting results | confirmed |
+| [E-036](#e-036) | p. 78 (PDF p. 93) | factual, not affecting results | confirmed |
+| [E-037](#e-037) | p. 79 (PDF p. 94) | factual, not affecting results | confirmed |
+| [E-038](#e-038) | p. 79 (PDF p. 94) | attribution | confirmed |
+| [E-039](#e-039) | p. 80 (PDF p. 95) | factual, not affecting results | confirmed |
+| [E-040](#e-040) | p. 80 (PDF p. 95) | reference could not be traced | confirmed |
+| [E-041](#e-041) | p. 87 (PDF p. 102) | factual, not affecting results | confirmed |
+| [E-042](#e-042) | p. 89 (PDF p. 104) | factual, not affecting results | confirmed |
+| [E-043](#e-043) | p. 56 (PDF p. 71) | factual, not affecting results | confirmed |
+| [E-044](#e-044) | p. 64 (PDF p. 79) | claim not supported by the work's evidence | confirmed |
+
 ### E-001
 
 - **Location:** p. 1 (PDF p. 16), Section 1.1
@@ -481,6 +530,17 @@ To report an error, open an issue with the form Correction or write to info@mtor
 - **Reported:** not reported
 - **Status:** confirmed
 
+### E-044
+
+- **Location:** p. 64 (PDF p. 79), Section 6.5.3
+- **Quoted text:** "identical hashes across one ARM64-hosted and two independent x86_64-hosted executions of the image are direct evidence of machine independence"
+- **Correction:** The comparison supports less than machine independence. Table 6.4 (p. 65) compares six artifacts, the synthesis, place-and-route and bitstream outputs of one iCE40 and one ECP5 design, on three machines, each with one container runtime: Machine 1 (macOS on Apple Silicon, OrbStack, the amd64 image under Rosetta 2), Machine 2 (Linux, x86_64, Docker Engine) and Machine 3 (Windows, x86_64, Docker Desktop with the WSL2 backend). All three ran the same pinned toolchain, in two builds of the image that hold the same tool binaries. Identical hashes there show that the toolchain pinned in the image gave the same outputs on these three hosts for these six artifacts; they are not direct evidence that the outputs are independent of the machine in general, on other hosts or runtimes, for other designs or with another toolchain. Read: "identical hashes across one ARM64-hosted and two independent x86_64-hosted executions of the image show that the pinned toolchain gave the same outputs on these three hosts".
+- **Class:** claim not supported by the work's evidence
+- **Evidence:** The work itself: Section 6.2.1 (pp. 53-54) for the three machines and their runtimes; Section 6.5.3 and Table 6.4 (pp. 64-65) for the six artifacts and the two builds of the image.
+- **Found:** 2026-10-11
+- **Reported:** not reported
+- **Status:** confirmed
+
 ## Properties of the record and the deposited file
 
 These are not errors of the author's text. The items on the catalogue record describe it as retrieved on 2026-10-09, after the library had worked on a request of 2026-09-27 and answered it on 2026-10-09. The deposited file is unchanged.
@@ -508,14 +568,3 @@ Every web address in the reference list and in Appendix A was requested on 2026-
 - **[16], p. 79 (PDF p. 94):** https://docs.docker.com/desktop/mac/ now redirects to the general Docker Desktop page (https://docs.docker.com/desktop/); the cited page on file-sharing performance is no longer at this address.
 - **[22], p. 80 (PDF p. 95):** https://docs.docker.com/engine/api now redirects to https://docs.docker.com/reference/api/engine/.
 - **[29], p. 80 (PDF p. 95):** https://teroshdl.github.io returns HTTP status 404 (not found).
-### E-044
-
-- **Location:** p. 64 (PDF p. 79), Section 6.5.3
-- **Quoted text:** "identical hashes across one ARM64-hosted and two independent x86_64-hosted executions of the image are direct evidence of machine independence"
-- **Correction:** The comparison supports less than machine independence. Table 6.4 (p. 65) compares six artifacts, the synthesis, place-and-route and bitstream outputs of one iCE40 and one ECP5 design, on three machines, each with one container runtime: Machine 1 (macOS on Apple Silicon, OrbStack, the amd64 image under Rosetta 2), Machine 2 (Linux, x86_64, Docker Engine) and Machine 3 (Windows, x86_64, Docker Desktop with the WSL2 backend). All three ran the same pinned toolchain, in two builds of the image that hold the same tool binaries. Identical hashes there show that the toolchain pinned in the image gave the same outputs on these three hosts for these six artifacts; they are not direct evidence that the outputs are independent of the machine in general, on other hosts or runtimes, for other designs or with another toolchain. Read: "identical hashes across one ARM64-hosted and two independent x86_64-hosted executions of the image show that the pinned toolchain gave the same outputs on these three hosts".
-- **Class:** claim not supported by the work's evidence
-- **Evidence:** The work itself: Section 6.2.1 (pp. 53-54) for the three machines and their runtimes; Section 6.5.3 and Table 6.4 (pp. 64-65) for the six artifacts and the two builds of the image.
-- **Found:** 2026-10-11
-- **Reported:** not reported
-- **Status:** confirmed
-

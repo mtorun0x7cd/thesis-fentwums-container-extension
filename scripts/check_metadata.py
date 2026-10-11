@@ -16,10 +16,18 @@ reads softwareRequirements as an IRI, so each requirement is a node of type
 SoftwareApplication with a name, not a plain string. It then parses the
 @mastersthesis entry in the README's bibtex block and compares its author,
 title, school, year and DOI with the preferred citation of CITATION.cff.
+Last, it holds the index of ERRATA.md against its entries: every entry under
+the heading Errata has exactly one row, whose location (the entry's Location
+up to its first comma), class and status are those of the entry, no row names
+an entry that does not exist, and the sentence before the table counts the
+entries per class as they are. A section without an entry is a finding, not a
+pass.
 
-    check_metadata.py            check the three files
+    check_metadata.py            check the files
     check_metadata.py --selftest prove that a changed DOI, version, type, title,
-                                 language or requirement is found
+                                 language or requirement is found, and an index
+                                 row whose class, location or status differs
+                                 from its entry, a missing row and a wrong count
 
 Exit status: 0 they agree, 1 a value differs, 2 a file could not be read.
 Needs PyYAML.
@@ -74,6 +82,77 @@ def bibtex_entry(readme):
 
 def unbrace(text):
     return re.sub(r"[{}]", "", text)
+
+
+def load_errata(root):
+    try:
+        return (root / "ERRATA.md").read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ReadError(str(exc))
+
+
+def errata_index_findings(text):
+    """The differences between the index under '## Errata' and the entries below it."""
+    section = re.search(r"^## Errata\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    if not section:
+        return ["ERRATA.md has no section Errata"]
+    body = section.group(1)
+    first = re.search(r"^### ", body, re.M)
+    head = body[:first.start()] if first else body
+    found, entries = [], []
+    for match in re.finditer(r"^### (\S+)\n(.*?)(?=^### |\Z)", body, re.S | re.M):
+        fields = dict(re.findall(r"^- \*\*(Location|Class|Status):\*\* (.*)$", match.group(2), re.M))
+        missing = [name for name in ("Location", "Class", "Status") if name not in fields]
+        if missing:
+            found.append("ERRATA.md %s has no %s field" % (match.group(1), " or ".join(missing)))
+            continue
+        location = fields["Location"].split(",")[0].strip()
+        if location.endswith("."):
+            location = location[:-1]
+        entries.append((match.group(1), location, fields["Class"].strip(), fields["Status"].strip()))
+    if not entries and not found:
+        return ["ERRATA.md has no entry under Errata, so its index was not compared"]
+    rows = {}
+    for line in head.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells[0] in ("Entry", "---"):
+            continue
+        link = re.fullmatch(r"\[([^\]]+)\]\(#([^)]+)\)", cells[0])
+        if len(cells) != 4 or not link:
+            found.append("ERRATA.md index: a row that is not entry, location, class and status: %r" % line)
+            continue
+        if link.group(2) != link.group(1).lower():
+            found.append("ERRATA.md index: %s links to #%s, not to its anchor" % (link.group(1), link.group(2)))
+        rows.setdefault(link.group(1), []).append(cells[1:])
+    for ident, location, kind, status in entries:
+        got = rows.pop(ident, [])
+        if len(got) != 1:
+            found.append("ERRATA.md index: %s has %d row(s), not one" % (ident, len(got)))
+            continue
+        for what, want, have in zip(("location", "class", "status"), (location, kind, status), got[0]):
+            if want != have:
+                found.append("ERRATA.md index: the %s of %s is %r, the entry says %r" % (what, ident, have, want))
+    for ident in rows:
+        found.append("ERRATA.md index: a row for %s, which has no entry" % ident)
+    counted = re.search(r"^The (\d+) entries by class: (.+)\.$", head, re.M)
+    if not counted:
+        found.append("ERRATA.md index: no sentence 'The N entries by class: ...' before the table")
+    else:
+        claimed, actual = {}, {}
+        for item in counted.group(2).split("; "):
+            pair = re.fullmatch(r'(\d+) "([^"]+)"', item)
+            if not pair:
+                found.append("ERRATA.md index: %r in the count sentence is not a number and a class" % item)
+                continue
+            claimed[pair.group(2)] = int(pair.group(1))
+        for _, _, kind, _ in entries:
+            actual[kind] = actual.get(kind, 0) + 1
+        if int(counted.group(1)) != len(entries) or claimed != actual:
+            found.append("ERRATA.md index: the sentence counts %s entries, %r; the entries are %d, %r"
+                         % (counted.group(1), claimed, len(entries), actual))
+    return found
 
 
 def compare(cff, meta, readme):
@@ -154,10 +233,37 @@ def selftest():
         ok = bool(found)
         failures += not ok
         print("  [%s] %s: %s" % ("ok" if ok else "FAIL", name, "; ".join(found) if found else "not found"))
-    if failures:
-        print("  [FAIL] selftest: %d of %d mutation(s) went unnoticed" % (failures, len(cases)))
+    errata = load_errata(ROOT)
+    if errata_index_findings(errata):
+        print("  [FAIL] selftest: the index of ERRATA.md does not agree with its entries, so no mutation can be judged")
         return 1
-    print("  [OK]   selftest: %d mutations found" % len(cases))
+    row = re.search(r"^\| \[E-001\]\(#e-001\) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|$", errata, re.M)
+    if not row:
+        print("  [FAIL] selftest: the index of ERRATA.md has no row for E-001 to mutate")
+        return 1
+    location, kind, status = (cell.strip() for cell in row.groups())
+    other = "typographical" if kind != "typographical" else "attribution"
+    errata_cases = [
+        ("an index row whose class differs from its entry",
+         errata.replace(row.group(0), row.group(0).replace("| %s |" % kind, "| %s |" % other, 1), 1)),
+        ("an index row whose location differs from its entry",
+         errata.replace(row.group(0), row.group(0).replace("| %s |" % location, "| %s0 |" % location, 1), 1)),
+        ("an index row whose status differs from its entry",
+         errata.replace(row.group(0), row.group(0)[:-len("| %s |" % status)] + "| %s, checked |" % status, 1)),
+        ("an entry without an index row", errata.replace(row.group(0) + "\n", "", 1)),
+        ("a count that does not add up", re.sub(r"^The (\d+) entries", lambda m: "The %d entries" % (int(m.group(1)) + 1),
+                                                 errata, count=1, flags=re.M)),
+    ]
+    for name, text in errata_cases:
+        found = errata_index_findings(text)
+        ok = bool(found) and text != errata
+        failures += not ok
+        print("  [%s] %s: %s" % ("ok" if ok else "FAIL", name, "; ".join(found) if found else "not found"))
+    total = len(cases) + len(errata_cases)
+    if failures:
+        print("  [FAIL] selftest: %d of %d mutation(s) went unnoticed" % (failures, total))
+        return 1
+    print("  [OK]   selftest: %d mutations found" % total)
     return 0
 
 
@@ -170,16 +276,18 @@ def main(argv):
             return 2
     try:
         cff, meta, readme = load(ROOT)
+        errata = load_errata(ROOT)
     except ReadError as exc:
         print("  [ERR]  %s; nothing was compared" % exc, file=sys.stderr)
         return 2
-    found = compare(cff, meta, readme)
+    found = compare(cff, meta, readme) + errata_index_findings(errata)
     for line in found:
         print("  [DIFF] %s" % line)
     if found:
-        print("  [FAIL] %d finding(s) in CITATION.cff, codemeta.json and the README's BibTeX entry" % len(found))
+        print("  [FAIL] %d finding(s) in CITATION.cff, codemeta.json, the README's BibTeX entry and the errata index"
+              % len(found))
         return 1
-    print("  [OK]   CITATION.cff, codemeta.json and the README's BibTeX entry agree")
+    print("  [OK]   CITATION.cff, codemeta.json and the README's BibTeX entry agree, and so do the errata index and its entries")
     return 0
 
 
