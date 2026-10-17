@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 Mert Torun
+# SPDX-License-Identifier: MIT
+
+# The github-actions block updates the pinned actions. This repository holds
+# finished work kept as a record and keeps that block alone: the submodules,
+# the NuGet packages of evaluation/harness/ and the SDK of evaluation/global.json
+# belong to the evaluation the thesis reports and stay as they are.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci

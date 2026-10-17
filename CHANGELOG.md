@@ -13,6 +13,7 @@ This repository was recreated with a new history on 2026-10-02; the earlier rele
 - `ERRATA.md`: E-044, on the sentence of Section 6.5.3 that calls identical hashes on three hosts direct evidence of machine independence; and an index before the first entry, with the number of entries per class and one row per entry, which `scripts/check_metadata.py` holds against the entries.
 - `evaluation/README.md`: the three figures of the results, each with a text alternative.
 - `CITATION.cff`: the keywords at the top level, as `codemeta.json` gives them; `codemeta.json`: the addresses of the README, the changelog, the build instructions and the issue tracker.
+- `.github/dependabot.yml`: Dependabot proposes updates of the pinned actions once a month; the submodules, the NuGet packages of the harness and its SDK stay as they are.
 
 ### Changed
 
